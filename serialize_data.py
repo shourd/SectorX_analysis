@@ -10,13 +10,13 @@ import xml.etree.ElementTree as ET
 import pickle
 import sys
 import re
-from dataObjects import Controller, Experiment, Record, Command
+from data_objects import Controller, Experiment, Record, Command
 
 # Directory loactions
 dataFolder = "/Users/sjoerdvanrooijen/PycharmProjects/SectorX/data/"
 
 # Serialized data filename
-serializedDataFilename = "serializedData.p"
+serializedDataFilename = "serialized_data.p"
 
 # Controller list
 controllerList = list()

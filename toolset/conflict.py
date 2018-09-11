@@ -1,4 +1,4 @@
-from dataObjects import logpointAircraft
+from data_objects import logpointAircraft
 from tools import ISA_IAStoTAS_kts, ftToNm, nmToFt
 import math
 import numpy

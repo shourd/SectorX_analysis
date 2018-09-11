@@ -3,7 +3,7 @@ AUTHOR: TJITTE DE JONG
 EDITED BY: SJOERD VAN ROOIJEN
 """
 
-from dataObjects import logpointAircraft, scenarioAircraft
+from data_objects import logpointAircraft, scenarioAircraft
 import math
 
 

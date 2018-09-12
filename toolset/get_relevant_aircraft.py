@@ -7,33 +7,25 @@ from data_objects import logpointAircraft, scenarioAircraft
 import math
 
 
-def getRelevantAircraft(_logpointAircraft, _scenarioAircraft, _finishedAircraft):
-
-    # Relevant aircraft list
-    relevantAircraftList = _logpointAircraft
-
-    # Finished aircraft list
-    finishedAircraft = _finishedAircraft
+def get_relevant_aircraft(relevant_aircraft_list, scenario_aircraft, finished_aircraft):
 
     # Loop through each aircraft in the logpoint
-    iAircraft: int = None
-    aircraft: logpointAircraft = None
-    for iAircraft, aircraft in enumerate(_logpointAircraft[:]):
+    for i_aircraft, aircraft in enumerate(relevant_aircraft_list[:]):
 
         # Check if aircraft has already finished using the ACID in the finished aircraft list
-        if aircraft.ACID in finishedAircraft[:]:
+        if aircraft.ACID in finished_aircraft[:]:
 
             # Delete from relevant aircraft list      
-            for iRelevantAircraft, relevantAircraft in enumerate(relevantAircraftList[:]):
+            for iRelevantAircraft, relevantAircraft in enumerate(relevant_aircraft_list[:]):
                 if relevantAircraft.ACID == aircraft.ACID:
-                    relevantAircraftList.remove(relevantAircraft)
+                    relevant_aircraft_list.remove(relevantAircraft)
 
         else:
 
             # Loop through each scenario aircraft to get the COPX positions
             iSAircraft: int = None
             sAircraft: scenarioAircraft = None
-            for iSAircraft, sAircraft in enumerate(_scenarioAircraft[:]):
+            for iSAircraft, sAircraft in enumerate(scenario_aircraft[:]):
 
                 # If the logpoint aircraft is the same as the scenario aircraft
                 if aircraft.ACID == sAircraft.ACID:
@@ -47,11 +39,11 @@ def getRelevantAircraft(_logpointAircraft, _scenarioAircraft, _finishedAircraft)
                     if dxy < 5.0 and aircraft.toc:
 
                         # Remove aircraft from list
-                        for iRelevantAircraft, relevantAircraft in enumerate(relevantAircraftList[:]):
+                        for iRelevantAircraft, relevantAircraft in enumerate(relevant_aircraft_list[:]):
                             if relevantAircraft.ACID == aircraft.ACID:
-                                relevantAircraftList.remove(relevantAircraft)
+                                relevant_aircraft_list.remove(relevantAircraft)
 
                         # Add aircraft to finished aircraft list
-                        finishedAircraft.append(aircraft.ACID)
+                        finished_aircraft.append(aircraft.ACID)
 
-    return relevantAircraftList, finishedAircraft
+    return relevant_aircraft_list, finished_aircraft

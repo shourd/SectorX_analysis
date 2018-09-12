@@ -5,54 +5,50 @@ import numpy
 from shapely import geometry
 
 
-def getConflicts (aircraftList, cautionTime, warningTime, accountForTOC, sectorPoints, distanceToSector):
+def get_conflicts(aircraft_list, caution_time, warning_time, account_for_TOC, sector_points, distance_to_sector):
 
     # Conflict list
-    conflictList = []
+    conflict_list = []
 
     # Create sector polygon
-    sectorPolygon = geometry.Polygon(sectorPoints)
+    sector_polygon = geometry.Polygon(sector_points)
 
     # Loop through each aircraft
-    iAircraft: int = None
-    aircraft: logpointAircraft = None
-    for iAircraft, aircraft in enumerate(aircraftList):
+    for i_aircraft, aircraft in enumerate(aircraft_list):
         
         # Get true airspeed
-        aircraftTAS = ISA_IAStoTAS_kts(aircraft.spd_kts, aircraft.alt_ft)
+        aircraft_TAS = ISA_IAStoTAS_kts(aircraft.spd_kts, aircraft.alt_ft)
 
         # Aircraft position and velocity vector
-        aircraftPos = [aircraft.x_nm, aircraft.y_nm]
-        aircraftVelocity = [aircraftTAS * math.sin(math.radians(aircraft.hdg_deg)),
-                            aircraftTAS * math.cos(math.radians(aircraft.hdg_deg))]
+        aircraft_pos = [aircraft.x_nm, aircraft.y_nm]
+        aircraft_velocity = [aircraft_TAS * math.sin(math.radians(aircraft.hdg_deg)),
+                             aircraft_TAS * math.cos(math.radians(aircraft.hdg_deg))]
 
         # Loop through each relative aircraft
-        iRelativeAircraft: int = None
-        relativeAircraft: logpointAircraft = None
-        for iRelativeAircraft, relativeAircraft in enumerate(aircraftList):
+        for i_relative_aircraft, relative_aircraft in enumerate(aircraft_list):
 
             # If the relative aircraft is the same as the current aircraft, then skip to the next relative aircraft
-            if (aircraft.ACID == relativeAircraft.ACID):
+            if aircraft.ACID == relative_aircraft.ACID:
                 continue
 
             # Get true airspeed
-            relativeAircraftTAS = ISA_IAStoTAS_kts(relativeAircraft.spd_kts, relativeAircraft.alt_ft)
+            relative_aircraft_tas = ISA_IAStoTAS_kts(relative_aircraft.spd_kts, relative_aircraft.alt_ft)
             
             # Relative aircraft position and velocity vector
-            relativeAircraftPos = [relativeAircraft.x_nm, relativeAircraft.y_nm]
-            relativeAircraftVelocity = [relativeAircraftTAS * math.sin(math.radians(relativeAircraft.hdg_deg)),
-                                        relativeAircraftTAS * math.cos(math.radians(relativeAircraft.hdg_deg))]
+            relative_aircraft_pos = [relative_aircraft.x_nm, relative_aircraft.y_nm]
+            relative_aircraft_velocity = [relative_aircraft_tas * math.sin(math.radians(relative_aircraft.hdg_deg)),
+                                          relative_aircraft_tas * math.cos(math.radians(relative_aircraft.hdg_deg))]
 
             # Delta distance [nm]
-            dx = relativeAircraftPos[0] - aircraftPos[0]
-            dy = relativeAircraftPos[1] - aircraftPos[1]
+            dx = relative_aircraft_pos[0] - aircraft_pos[0]
+            dy = relative_aircraft_pos[1] - aircraft_pos[1]
 
             # Delta speed [nm/h]
-            dvx = relativeAircraftVelocity[0] - aircraftVelocity[0]
-            dvy = relativeAircraftVelocity[1] - aircraftVelocity[1]
+            dvx = relative_aircraft_velocity[0] - aircraft_velocity[0]
+            dvy = relative_aircraft_velocity[1] - aircraft_velocity[1]
 
             # Calculate 2D time to CPA [h]
-            if( not(dvx == 0.0 and dvy == 0.0) ):
+            if not(dvx == 0.0 and dvy == 0.0):
                 t_CPA = -(dx * dvx + dy * dvy) / (dvx * dvx + dvy * dvy)
             else:
                 t_CPA = 0.0
@@ -61,64 +57,58 @@ def getConflicts (aircraftList, cautionTime, warningTime, accountForTOC, sectorP
             d_CPA = math.sqrt((dx + dvx*t_CPA)*(dx + dvx*t_CPA) + (dy + dvy*t_CPA)*(dy + dvy*t_CPA))
 
             # Calculate time to loss of separation [h]
-            if( not(dvx == 0.0 and dvy == 0.0) and d_CPA < 5 ):
+            if not(dvx == 0.0 and dvy == 0.0) and d_CPA < 5:
                 t_LOS = t_CPA - math.sqrt(5.0*5.0 - d_CPA*d_CPA) / math.sqrt(dvx*dvx + dvy*dvy)
             else:
                 t_LOS = 0.0
 
             # Aircraft position at CPA
-            aircraftPOSAtCPA = [aircraftPos[0] + aircraftVelocity[0] * t_CPA,
-                                aircraftPos[1] + aircraftVelocity[1] * t_CPA]
+            aircraft_pos_at_CPA = [aircraft_pos[0] + aircraft_velocity[0] * t_CPA,
+                                   aircraft_pos[1] + aircraft_velocity[1] * t_CPA]
 
             # Relative aircraft position at CPA
-            relativeAircraftPOSAtCPA = [relativeAircraftPos[0] + relativeAircraftVelocity[0] * t_CPA,
-                                        relativeAircraftPos[1] + relativeAircraftVelocity[1] * t_CPA]
-
-            #print(str(t_LOS > 0) + ":" +
-            #      str(t_LOS < cautionTime / 3600) + ":" +
-            #      str(numpy.round(numpy.abs(relativeAircraft.alt_ft - aircraft.alt_ft)) < 1000) + ":" +
-            #      str(math.hypot(relativeAircraftPOSAtCPA[0] - aircraftPOSAtCPA[0], relativeAircraftPOSAtCPA[1] - aircraftPOSAtCPA[1]) < 5) + ":" +
-            #      str(sectorPolygon.distance(geometry.Point(aircraftPos)) < distanceToSector) + ":" +
-            #      str(not (accountForTOC and aircraft.toc and relativeAircraft.toc)))
+            relative_aircraft_pos_at_CPA = [relative_aircraft_pos[0] + relative_aircraft_velocity[0] * t_CPA,
+                                            relative_aircraft_pos[1] + relative_aircraft_velocity[1] * t_CPA]
 
             # Check if aircraft will be in conflict
-            if (# Positive time to LOS
-                #t_LOS > 0 and
+            if (  # Positive time to LOS
+                t_CPA > 0 and
                 # Time to LOS is less than the caution time
-                t_LOS < cautionTime / 3600 and
+                t_LOS < caution_time / 3600 and
                 # Will have vertical LOS
-                numpy.round(numpy.abs(relativeAircraft.alt_ft - aircraft.alt_ft)) < 1000 and 
+                numpy.round(numpy.abs(relative_aircraft.alt_ft - aircraft.alt_ft)) < 1000 and
                 # Will have horizontal LOS
-                math.hypot(relativeAircraftPOSAtCPA[0] - aircraftPOSAtCPA[0], relativeAircraftPOSAtCPA[1] - aircraftPOSAtCPA[1]) < 5 and
+                math.hypot(relative_aircraft_pos_at_CPA[0] - aircraft_pos_at_CPA[0], relative_aircraft_pos_at_CPA[1] - aircraft_pos_at_CPA[1]) < 5 and
                 # Check if aircraft is not too far from the sector
-                sectorPolygon.distance(geometry.Point(aircraftPos)) < distanceToSector and
+                sector_polygon.distance(geometry.Point(aircraft_pos)) < distance_to_sector and
                 # Check if a TOC has been issued
-                not (accountForTOC and aircraft.toc and relativeAircraft.toc)):
-                    willBeInConflict = True
+                not(account_for_TOC and aircraft.toc and relative_aircraft.toc)):
+                    in_conflict = True
             else:
-                    willBeInConflict = False
+                    in_conflict = False
 
             # If the aircraft will be in conflict
-            if (willBeInConflict):
+            if in_conflict:
 
                 # Get conflict angle [rad]
-                conflictAngle = numpy.arccos(numpy.clip(numpy.dot(aircraftVelocity/numpy.linalg.norm(aircraftVelocity),relativeAircraftVelocity/numpy.linalg.norm(relativeAircraftVelocity)),-1.0,1.0))
+                conflict_angle = numpy.arccos(numpy.clip(numpy.dot(aircraft_velocity/numpy.linalg.norm(aircraft_velocity),
+                                                                   relative_aircraft_velocity/numpy.linalg.norm(relative_aircraft_velocity)),-1.0,1.0))
 
                 # If conflict list is empty, then store the conflict
-                if not (conflictList):
-                    alreadyExists = False
+                if not conflict_list:
+                    already_exists = False
                 else:
 
                     # Check if conflict pair is already in the list
-                    alreadyExists = False
-                    for i in range(0, len(conflictList)):
-                        if ((conflictList[i][0] == aircraft.ACID and conflictList[i][1] == relativeAircraft.ACID) or 
-                           (conflictList[i][1] == aircraft.ACID and conflictList[i][0] == relativeAircraft.ACID)):
-                            alreadyExists = True
+                    already_exists = False
+                    for i in range(0, len(conflict_list)):
+                        if ((conflict_list[i][0] == aircraft.ACID and conflict_list[i][1] == relative_aircraft.ACID) or
+                           (conflict_list[i][1] == aircraft.ACID and conflict_list[i][0] == relative_aircraft.ACID)):
+                            already_exists = True
                             
-                # If conflct pair is not in the list, then store the conflict
-                if not (alreadyExists):
-                    conflictList.append([aircraft.ACID, relativeAircraft.ACID, t_CPA*3600, d_CPA, t_LOS*3600, math.degrees(conflictAngle)])
+                # If conflict pair is not in the list, then store the conflict
+                if not already_exists:
+                    conflict_list.append([aircraft.ACID, relative_aircraft.ACID, t_CPA*3600, d_CPA, t_LOS*3600, math.degrees(conflict_angle)])
     
     # Return the conflict list                    
-    return conflictList
+    return conflict_list

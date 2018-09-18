@@ -13,30 +13,29 @@ def create_dataframes():
     """ IMPORT DATA FROM PICKLE AND SAVE AS PANDAS DATAFRAMES """
 
     # Load data from pickle
-    print("Load serialized data...", end="", flush=True)
+    print("Load serialized data...", end="")
     pickle_file = open("data/serialized_data.p", "rb")
-    controller_list = pickle.load(pickle_file)
+    participant_list = pickle.load(pickle_file)
     pickle_file.close()
-    print("Done!", flush=True)
+    print("Done!")
 
     # Get the sector polygon
     sector_points = []
-    for sector in controller_list[0].experiment[0].record.scenario.airspace.sectors.sector:
+    for sector in participant_list[0].runs[0].scenario.airspace.sectors.sector:
         if sector.type == "sector":
             for point in sector.border_points.point:
                 pointX = point.x_nm
                 pointY = point.y_nm
                 sector_points.append([pointX,pointY])
 
-    # Loop through each controller
+    # Loop through each participant
     participants = []
-    for controller in controller_list:
+    for participant in participant_list:
         runs = []
         # Loop through each run
-        for run in controller.experiment:
+        for run in participant.runs:
 
-            # Notify user
-            print("Analyzing " + run.record.participant + " " + run.subject + " (" + run.recordXML + ")...")
+            print("Analyzing " + run.participant)
 
             ''' STATE ANALYSIS '''
 
@@ -52,7 +51,7 @@ def create_dataframes():
             ''' Loop through each logpoint to create command dataframe '''
             run.traffic = pd.DataFrame()
             i_conflict = 0
-            for i_logpoint, logpoint in enumerate(run.record.logpoints):
+            for i_logpoint, logpoint in enumerate(run.logpoints):
 
                 """ ALL AIRCRAFT STATE DATA IS SAVED TO RUN.TRAFFIC """
 
@@ -72,7 +71,7 @@ def create_dataframes():
                 relevant_aircraft_list, finished_aircraft_list = \
                     get_relevant_aircraft(
                         logpoint.traffic.aircraft,
-                        run.record.scenario.traffic.aircraft,
+                        run.scenario.traffic.aircraft,
                         finished_aircraft_list
                     )
 
@@ -109,15 +108,19 @@ def create_dataframes():
                 if command.SPD is not None:
                     command.type = 'SPD'
                     command.value = command.SPD
-                if command.DCT is True:  # direct to exit waypoint
+                if command.DCT is True:  # direct to exit way-point
                     command.type = 'DCT'
                     command.value = None
+                else:
+                    command.type = 'error'
+                    print(command)
+                    print('error')
 
                 run.command_list.loc[i_command] = [command.timestamp,
-                                               command.type,
-                                               command.value,
-                                               command.ACID,
-                                               command.EXQ]
+                                                   command.type,
+                                                   command.value,
+                                                   command.ACID,
+                                                   command.EXQ]
 
             run.command_list = run.command_list[run.command_list.EXQ == True]  # only take executed values
             # print(run.command_list)
@@ -310,15 +313,14 @@ def write_to_csv():
     csv_writer.writerow(csv_header)
 
     # csv_writer.writerow([controller.participant,
-    #                      run.record.subject,
-    #                      run.record.scenario.file,
+    #                      run.subject,
+    #                      run.scenario.file,
     #                      sector_points,
     #                      num_actions, num_hdg, num_spd])
     csv_file.close()
 
 
 if __name__ == "__main__":
-    """ If stand-alone """
     settings = config.Settings
     try:
         participants = pickle.load(open("data/all_data.pickle", "rb"))

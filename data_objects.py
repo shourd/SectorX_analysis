@@ -6,24 +6,23 @@ EDITED BY: SJOERD VAN ROOIJEN
 from tools import strToBool
 
 
-class Controller():
+class Participant:
     # Initialization function
-    def __init__(self, participant, experiment):
-        self.participant = participant
-        self.experiment = experiment
+    def __init__(self, name):
+        self.name = name
+        self.runs = []  # create empty list
 
 
-class Experiment():
-    # Initialization function
-    def __init__(self, subject, record, commands, recordXML, commandsMSG):
-        self.subject = subject
-        self.record = record
-        self.commands = commands
-        self.recordXML = recordXML
-        self.commandsMSG = commandsMSG
+# class Run:
+#     # Initialization function
+#     def __init__(self, participant, record, commands, file_name):
+#         self.participant = participant
+#         self.record = record
+#         self.commands = commands
+#         self.file_name = file_name
 
 
-class Command():
+class Command:
     # Initialization function
     def __init__(self, commandLine):
 
@@ -99,24 +98,24 @@ class Command():
             self.EXQ = True
 
 
-class Record():
+class Run:
     # Initialization function
-    def __init__(self, recordElement, participant):
-        self.advisories = recordElement.find("./advisories").text
-        self.date_time= recordElement.find("./date_time").text
-        self.interactive = strToBool(recordElement.find("./interactive").text)
-        # self.performance = Performance(recordElement.find("./performance"))
-        self.scenario = Scenario(recordElement.find("./scenario"))
-        self.subject = recordElement.find("./subject").text
-        self.participant = participant
-        self.workload = Workload(recordElement.find("./workload"))
-
-        self.logpoints = list()
-        for logpointElement in recordElement.findall("./logpoint"):
+    def __init__(self, record_element, file_name):
+        # self.advisories = record_element.find("./advisories").text
+        self.date_time = record_element.find("./date_time").text
+        # self.interactive = strToBool(record_element.find("./interactive").text)
+        # self.performance = Performance(record_element.find("./performance"))
+        self.scenario = Scenario(record_element.find("./scenario"))
+        self.participant = record_element.find("./subject").text
+        self.file_name = file_name
+        self.workload = Workload(record_element.find("./workload"))
+        self.commands = []
+        self.logpoints = []
+        for logpointElement in record_element.findall("./logpoint"):
             self.logpoints.append(Logpoint(logpointElement))
 
         #self.workloads = list()
-        #for workloadElement in recordElement.findall("./workload"):
+        #for workloadElement in record_element.findall("./workload"):
         #    self.woworkloads.append(Workload(workloadElement))
 
 

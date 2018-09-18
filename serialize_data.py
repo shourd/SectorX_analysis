@@ -1,115 +1,70 @@
-"""
-AUTHOR: TJITTE DE JONG
-EDITED BY: SJOERD VAN ROOIJEN
-"""
-
-# This file serializes the individual data files
-
 import os
 import xml.etree.ElementTree as ET
 import pickle
 import sys
 import re
-from data_objects import Controller, Experiment, Record, Command
-
-# Directory loactions
-dataFolder = "/Users/sjoerdvanrooijen/PycharmProjects/SectorX/data/"
-
-# Serialized data filename
-serializedDataFilename = "serialized_data.p"
-
-# Controller list
-controllerList = list()
+from data_objects import Participant, Run, Run, Command
+from config import Settings
 
 
-def main():
+def serialize_data():
+    """ Convert XML files to python Classes/objects """
+    print("Start serialization...")
 
-    # Notify user
-    print("Start serialization...", flush=True)
+    settings = Settings
 
-    # Loop through each data file in the data folder
-    for dataFile in os.listdir(dataFolder):
+    # Controller list
+    participant_list = []
+    participant_names = []
 
-        # Record and commands variable
-        record = None
-        commands = None
+    # Obtain list of xml files
+    files = os.listdir(settings.data_folder)
+    xml_files = [file for file in files if '.xml' in file]
+    for i_file, file in enumerate(xml_files):
+        print("Process " + file + "...")
 
-        # If the file is an xml or msg file
-        if (dataFile.endswith(".xml")) or (dataFile.endswith(".msg")):
+        participant_name = file.split("_", 1)[0]
+        if participant_name not in participant_names:
+            participant_names.append(participant_name)
+            participant_list.append(Participant(participant_name))
+        else:
+            print('Participant already exists')
 
-            # Notify user
-            print("Process " + dataFile + "...", end="", flush=True)
+        # obtain participant number (index) in list
+        for index, participant in enumerate(participant_list):
+            if participant.name == participant_name:
+                i_participant = index
 
-            # If controller already exist
-            if 'newController' not in locals() or newController.participant != dataFile.split(".", 1)[0]:
-                # Create a new controller
-                newController = Controller(dataFile.split(".", 1)[0], list())
-                controllerList.append(newController)
-                index = -1
-            else:
-                print('Participant already exists')
+        # parse XML
+        root_element = ET.parse(settings.data_folder + file).getroot()
+        # Deserialize XML into objects
+        run = Run(root_element, file[:-4])
 
-            # If the file is an xml file
-            if dataFile.endswith(".xml"):
+        """ CONTINUE WITH MSG FILE """
+        # change .xml filename to .msg filename
+        file = file[:-4] + '.msg'
+        print("Process " + file + "...")
+        # Read the commands from the message file and skip the header
+        msg_file = open(settings.data_folder + file, "r", newline="")
+        subject = re.findall("subject:(.*),", msg_file.readline())[0]
+        command_lines = msg_file.readlines()[1:]
+        msg_file.close()
 
-                # Get the root element
-                rootElement = ET.parse(dataFolder + dataFile).getroot()
+        # Deserialize MSG into objects
+        run.commands = []
+        for command in command_lines:
+            run.commands.append(Command(command.strip()))
 
-                # Deserialize XML into objects
-                record = Record(rootElement, dataFile.split(".", 1)[0])
+        participant_list[i_participant].runs.append(run)
 
-                # If the experiment is yet present
-                # if any(record.subject in experiment.subject for experiment in controllerList[index].experiment):
-                #     experimentIndex = next(i for i,x in enumerate(controllerList[index].experiment) if x.subject == record.subject)
-                #     controllerList[index].experiment[experimentIndex].record = record
-                #     controllerList[index].experiment[experimentIndex].recordXML = dataFile
-                # else:
-                #     newExperiment = Experiment(record.subject, record, None, dataFile, None)
-                #     controllerList[index].experiment.append(newExperiment)
-                index = 0
-                experimentIndex = 0
-                controllerList[index].experiment[experimentIndex].record = record
-                controllerList[index].experiment[experimentIndex].recordXML = dataFile
-
-            # If the file is an msg file
-            if dataFile.endswith(".msg"):
-
-                # Read the commands from the message file and skip the header
-                msgFile = open(dataFolder + dataFile, "r", newline="")
-                subject = re.findall("subject:(.*),", msgFile.readline())[0]
-                commandLines = msgFile.readlines()[1:]
-                msgFile.close()
-
-                # Deserialize MSG into objects
-                commands = list()
-                for commandLine in commandLines:
-                    commands.append(Command(commandLine.strip()))
-
-                # If the experiment is yet present
-                if any(subject in experiment.subject for experiment in controllerList[index].experiment):
-                    experimentIndex = next(i for i, x in enumerate(controllerList[index].experiment) if x.subject == subject)
-                    controllerList[index].experiment[experimentIndex].commands = commands
-                    controllerList[index].experiment[experimentIndex].commandsMSG = dataFile
-                else:
-                    newExperiment = Experiment(subject, None, commands, None, dataFile)
-                    controllerList[index].experiment.append(newExperiment)
-
-            # Notify user
-            print("Done!", flush=True)
-
-    # Notify user
-    print("Serialize processed data to " + serializedDataFilename + "...", end="", flush = True)
+    print("Saved serialized data to " + settings.serialized_data_filename)
 
     # Serialize the controller list
-    pickleFile = open(dataFolder + serializedDataFilename, "wb")
-    pickle.dump(controllerList, pickleFile)
-    pickleFile.close()
-
-    # Notify user
-    print("Done!", flush = True)
-    print("Finished!", flush = True)
+    pickle_file = open(settings.data_folder + settings.serialized_data_filename, "wb")
+    pickle.dump(participant_list, pickle_file)
+    pickle_file.close()
 
 
 if __name__ == "__main__":
-    main()
+    serialize_data()
 

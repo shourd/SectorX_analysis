@@ -6,6 +6,7 @@ import config
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 
 
 def create_dataframes():
@@ -49,8 +50,22 @@ def create_dataframes():
                                                   'Angle'])
 
             ''' Loop through each logpoint to create command dataframe '''
+            run.traffic = pd.DataFrame()
             i_conflict = 0
             for i_logpoint, logpoint in enumerate(run.record.logpoints):
+
+                """ ALL AIRCRAFT STATE DATA IS SAVED TO RUN.TRAFFIC """
+
+                for aircraft in logpoint.traffic.aircraft:
+                    logpoint_data = [i_logpoint, aircraft.ACID, aircraft.hdg_deg, aircraft.track_cmd, aircraft.spd_kts, aircraft.speed_cmd,
+                                     aircraft.x_nm, aircraft.y_nm, aircraft.selected]
+                    df = pd.DataFrame(logpoint_data).transpose()
+                    run.traffic = run.traffic.append(df)
+
+                if i_logpoint % 200 == 0:
+                    print('Analyzed time: {}s'.format(i_logpoint))
+
+                """ ALL CONFLICTS ARE SAVED TO RUN.CONFLICTS """
 
                 # Remove aircraft from the logpoint that have reached their
                 # destination and have been issued with a TOC command
@@ -75,7 +90,10 @@ def create_dataframes():
                         run.conflicts.loc[i_conflict] = conflict
                         i_conflict += 1
 
-            ''' Create command dataframe '''
+            ''' ALL COMMANDS ARE SAVED IN RUN.COMMAND_LIST '''
+
+            run.traffic.columns = ['time', 'ACID', 'hdg_deg', 'hdg_comd',
+                                   'spd_kts', 'spd_cmd', 'x_nm', 'y_nm','selected']
             run.command_list = pd.DataFrame(columns=['time', 'type', 'value', 'ACID', 'EXQ'])
             run.command_list = run.command_list.astype(dtype=
                                                {'time': 'int',
@@ -121,7 +139,7 @@ def analyse_conflicts(participants):
             run.conflicts[float_columns] = run.conflicts[float_columns].round(1)  #round all numerical columns
 
             # print(run.conflicts)
-            fig, ax = plt.subplots()
+            fig, ax = plt.subplots(figsize=(4, 2))
             sns.stripplot(data=run.conflicts, x='time', ax=ax, jitter=False)
             plt.title('In conflict?')
             plt.savefig('figures/in_conflict.png', bbox_inches='tight')
@@ -137,17 +155,41 @@ def analyse_actions(participants):
     for participant in participants:
         for run in participant:
 
+            # CALCULATE NUMBER OF ACTIONS
             num_actions = len(run.command_list)
             num_spd = len(run.command_list[run.command_list.type == 'SPD'])
             num_hdg = len(run.command_list[run.command_list.type == 'HDG'])
             num_dct = len(run.command_list[run.command_list.type == 'DCT'])
 
-            print('Total actions:', num_actions)
-            print('SPD actions:', num_spd)
-            print('HDG actions:', num_hdg)
-            print('----------- Consistency Report ------------')
-            if num_spd > num_hdg:
-                print('Preferred resolution: SPD ({})'.format(num_spd))
+            # CALCULATE WHETHER HDG COMMAND IS 'LEFT' OR 'RIGHT'
+            # OR SPD COMMAND INCREASE OR DECREASE
+            run.command_list['direction'] = 'N/A'
+            for index, row in run.command_list.iterrows():
+                if row.type == 'HDG':
+                    # Get HDG (hdg_deg) of respective aircraft (ACID) at the time of the command
+                    hdg_current = run.traffic.loc[(run.traffic['time'] == row.time) & (run.traffic['ACID'] == row.ACID), ['hdg_deg']]
+                    hdg_current = hdg_current.iloc[0][0]  # take value only
+                    hdg_resolution = row.value
+
+                    hdg_relative = hdg_resolution - hdg_current
+                    # make sure hdg_rel is always between -180 and 180
+                    if hdg_relative > 180:
+                        hdg_relative -= 360
+                    elif hdg_relative < -180:
+                        hdg_relative += 360
+
+                    # add direction value to Commands table
+                    if hdg_relative > 0:
+                        run.command_list.loc[index, 'direction'] = 'right'
+                    else:
+                        run.command_list.loc[index, 'direction'] = 'left'
+                elif row.type == 'SPD':
+                    if row.value > 250:
+                        run.command_list.loc[index, 'direction'] = 'increase'
+                    elif row.value < 250:
+                        run.command_list.loc[index, 'direction'] = 'decrease'
+                    elif row.value == 250:
+                        run.command_list.loc[index, 'direction'] = 'revert'
 
             """ HISTOGRAM OF RESOLUTIONS """
 
@@ -162,6 +204,7 @@ def analyse_actions(participants):
             spd_commands = run.command_list[run.command_list.type == 'SPD'].value
             spd_commands = pd.to_numeric(spd_commands)
             hdg_commands = run.command_list[run.command_list.type == 'HDG'].value
+            hdg_commands_binary = run.command_list[run.command_list.type == 'HDG'].direction
             hdg_commands = pd.to_numeric(hdg_commands)
 
             fig, (ax1, ax2) = plt.subplots(1, 2)
@@ -182,17 +225,19 @@ def analyse_actions(participants):
             ''' LEFT/RIGHT or INCREASE/DECREASE '''
             # TODO: MAKE BARPLOT with increase decrease left right.
             fig, (ax1, ax2) = plt.subplots(1, 2)
-            fig.suptitle('Histograms of commands')
+            fig.suptitle('Relative commands')
 
-            sns.distplot(spd_commands, bins=2, kde=False, ax=ax1)
+            sns.countplot(data=run.command_list[run.command_list.type == 'SPD'],
+                          x='direction', order=['decrease', 'revert', 'increase'], ax=ax1)
             ax1.set_title('SPD commands')
-            ax1.set_xlabel('IAS [kts]')
+            ax1.set_xlabel('IAS')
 
-            sns.distplot(hdg_commands, bins=2, kde=False, ax=ax2)
-            ax2.set_title('HDG commands')
-            ax2.set_xlabel('HDG [deg]')
-            if settings.show_plots:
-                plt.show()
+            sns.countplot(data=run.command_list[run.command_list.type == 'HDG'],
+                          x='direction', order=['left', 'right'], ax=ax2)
+            ax2.set_title('HDG commands (direction)')
+            ax2.set_xlabel('Relative heading')
+            # if settings.show_plots:
+            plt.show()
 
             ''' COMMAND TYPE TIMELINE '''
             fig, ax = plt.subplots()
@@ -201,6 +246,47 @@ def analyse_actions(participants):
             plt.savefig('figures/commands.png', bbox_inches='tight')
             if settings.show_plots:
                 plt.show()
+
+            ''' AIRCRAFT TYPE '''
+
+            # all_ACIDs = run.command_list.ACID.unique().tolist()
+            # if scenario 1:
+            main_flow_ACIDs = ['YG6251', 'XM1337', 'VS4694', 'UM6490', 'UG7514', 'EN5625', 'EF6739', 'AT5763', 'AH2854', 'AN1778']
+            intruding_ACIDs = ['RA4743', 'SG3047', 'SM7071', 'PG4310', 'PA5424', 'RG3628', 'QM2514', 'OS2071', 'NA9895', 'OM3185']
+            # # all aircraft that are not in the main flow are considered intruder aircraft
+            # for ACID in all_ACIDs:
+            #     if ACID not in main_flow_ACIDs:
+            #         intruding_ACIDs.append(ACID)
+
+            run.command_list_main = run.command_list.loc[run.command_list.ACID.isin(main_flow_ACIDs)]
+            run.command_list_intruding = run.command_list.loc[np.logical_not(run.command_list.ACID.isin(main_flow_ACIDs))]
+            num_actions_main = len(run.command_list_main)
+            num_actions_intruding = len(run.command_list_intruding)
+
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+
+            sns.countplot(data=run.command_list_main, y='ACID', palette='Blues_d', order=main_flow_ACIDs, ax=ax1)
+            ax1.set_title('Main aircraft flow')
+            ax1.set_xlim([0, 10])
+
+            sns.countplot(data=run.command_list_intruding, y='ACID', palette='Blues_d', order=intruding_ACIDs, ax=ax2)
+            ax2.set_title('Intruding aircraft flow')
+            ax2.set_xlim([0, 10])
+            plt.savefig('figures/ACIDS.png', bbox_inches='tight')
+            if settings.show_plots:
+                plt.show()
+
+            """ CONSISTENCY REPORT """
+            print('----------- Consistency Report ------------')
+            print('Total actions:', num_actions)
+            print('SPD actions:', num_spd)
+            print('HDG actions:', num_hdg)
+            print('DCT actions:', num_dct)
+            if num_spd > num_hdg:
+                print('Preferred resolution: SPD ({})'.format(num_spd))
+
+            print('Total actions (Main flow):', num_actions_main)
+            print('Total actions (Intruding flow):', num_actions_intruding)
 
 
 def write_to_csv():

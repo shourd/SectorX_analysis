@@ -7,5 +7,6 @@ class Settings:
     distance_to_sector = 50     # distance at which to include aircraft in relevant aircraft list
     show_plots = False          # show plots when running scripts
     data_folder = 'data/'
-    serialized_data_filename = "serialized_data.p"
+    serialized_data_filename = "sjoerd2_serialized_data.p"
+    processed_data_filename = 'processed_data.p'
 

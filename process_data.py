@@ -14,7 +14,7 @@ def create_dataframes():
 
     # Load data from pickle
     print("Load serialized data...", end="")
-    pickle_file = open("data/serialized_data.p", "rb")
+    pickle_file = open(settings.data_folder + settings.serialized_data_filename, "rb")
     participant_list = pickle.load(pickle_file)
     pickle_file.close()
     print("Done!")
@@ -33,14 +33,15 @@ def create_dataframes():
     for participant in participant_list:
         runs = []
         # Loop through each run
-        for run in participant.runs:
+        for i_run, run in enumerate(participant.runs):
 
-            print("Analyzing " + run.participant)
+            # print("Analyzing: " + run.participant + ' (run: ' + str(i_run) + ')')
+            print('Participant: {} (run: {})'.format(run.participant, i_run+1))
 
             ''' STATE ANALYSIS '''
 
             finished_aircraft_list = []  # List of aircraft that reached their goal
-            run.conflicts = pd.DataFrame(columns=['time',
+            run.conflicts = pd.DataFrame(columns=['timestamp',
                                                   'ACID',
                                                   'Relative ACID',
                                                   'T_CPA',
@@ -50,13 +51,16 @@ def create_dataframes():
 
             ''' Loop through each logpoint to create command dataframe '''
             run.traffic = pd.DataFrame()
+            score = []
             i_conflict = 0
             for i_logpoint, logpoint in enumerate(run.logpoints):
 
-                """ ALL AIRCRAFT STATE DATA IS SAVED TO RUN.TRAFFIC """
+                score.append(logpoint.score)
 
+                """ ALL AIRCRAFT STATE DATA IS SAVED TO RUN.TRAFFIC """
+                # TODO: Misschien dataframe appenden uit de a/c loop halen voor snelheid?
                 for aircraft in logpoint.traffic.aircraft:
-                    logpoint_data = [i_logpoint, aircraft.ACID, aircraft.hdg_deg, aircraft.track_cmd, aircraft.spd_kts, aircraft.speed_cmd,
+                    logpoint_data = [i_logpoint, logpoint.timestamp, aircraft.ACID, aircraft.hdg_deg, aircraft.track_cmd, aircraft.spd_kts, aircraft.speed_cmd,
                                      aircraft.x_nm, aircraft.y_nm, aircraft.selected]
                     df = pd.DataFrame(logpoint_data).transpose()
                     run.traffic = run.traffic.append(df)
@@ -85,50 +89,64 @@ def create_dataframes():
 
                 if conflict_list:  # save conflict_list (per timestamp) to conflicts (all timestamps)
                     for conflict in conflict_list:
-                        conflict.insert(0, i_logpoint)  # add timestamp to conflict
+                        conflict.insert(0, logpoint.timestamp)  # add timestamp to conflict
                         run.conflicts.loc[i_conflict] = conflict
                         i_conflict += 1
 
             ''' ALL COMMANDS ARE SAVED IN RUN.COMMAND_LIST '''
 
-            run.traffic.columns = ['time', 'ACID', 'hdg_deg', 'hdg_comd',
+            run.traffic.columns = ['logpoint', 'timestamp', 'ACID', 'hdg_deg', 'hdg_comd',
                                    'spd_kts', 'spd_cmd', 'x_nm', 'y_nm','selected']
-            run.command_list = pd.DataFrame(columns=['time', 'type', 'value', 'ACID', 'EXQ'])
+
+            run.command_list = pd.DataFrame(columns=['timestamp',
+                                                     'type',
+                                                     'value',
+                                                     'ACID',
+                                                     'EXQ',
+                                                     'timestamp_traffic'])
             run.command_list = run.command_list.astype(dtype=
-                                               {'time': 'int',
-                                                'type': 'object',
-                                                'value': 'int',
-                                                'ACID': 'object',
-                                                'EXQ': 'bool'})
+                                                       {'timestamp': 'float',
+                                                        'type': 'object',
+                                                        'value': 'int',
+                                                        'ACID': 'object',
+                                                        'EXQ': 'bool',
+                                                        'timestamp_traffic': 'float'})
             for i_command, command in enumerate(run.commands):
                 # Define command type
                 if command.HDG is not None:
                     command.type = 'HDG'
                     command.value = command.HDG
-                if command.SPD is not None:
+                elif command.SPD is not None:
                     command.type = 'SPD'
                     command.value = command.SPD
-                if command.DCT is True:  # direct to exit way-point
+                elif command.DCT is True:  # direct to exit way-point
                     command.type = 'DCT'
                     command.value = None
                 else:
-                    command.type = 'error'
-                    print(command)
-                    print('error')
+                    command.type = 'N/A'
+                    command.value = None
+                    # print('Command type not recognized CMD:', i_command)
+
+                traffic_timestamps = [float(x) for x in run.traffic.timestamp.unique()]  # convert to floats
+                command.timestamp_traffic = command.timestamp - 1  # action always taken at previous state
+                while command.timestamp_traffic not in traffic_timestamps:
+                    command.timestamp_traffic -= 1
 
                 run.command_list.loc[i_command] = [command.timestamp,
                                                    command.type,
                                                    command.value,
                                                    command.ACID,
-                                                   command.EXQ]
+                                                   command.EXQ,
+                                                   command.timestamp_traffic]
 
-            run.command_list = run.command_list[run.command_list.EXQ == True]  # only take executed values
-            # print(run.command_list)
+            run.command_list = run.command_list[run.command_list.type != 'N/A']  # only take executed commands
+            run.command_list.reset_index(drop=True)
+            print(run.command_list)
 
             runs.append(run)
         participants.append(runs)
 
-    pickle.dump(participants, open("data/all_data.pickle", "wb"))
+    pickle.dump(participants, open(settings.data_folder + settings.processed_data_filename, "wb"))
     print('Data saved to pickle')
     return participants
 
@@ -143,7 +161,7 @@ def analyse_conflicts(participants):
 
             # print(run.conflicts)
             fig, ax = plt.subplots(figsize=(4, 2))
-            sns.stripplot(data=run.conflicts, x='time', ax=ax, jitter=False)
+            sns.stripplot(data=run.conflicts, x='timestamp', ax=ax, jitter=False)
             plt.title('In conflict?')
             plt.savefig('figures/in_conflict.png', bbox_inches='tight')
             if settings.show_plots:
@@ -156,7 +174,7 @@ def analyse_conflicts(participants):
 def analyse_actions(participants):
     """ COMMAND / ACTION ANALYSIS """
     for participant in participants:
-        for run in participant:
+        for i_run, run in enumerate(participant):
 
             # CALCULATE NUMBER OF ACTIONS
             num_actions = len(run.command_list)
@@ -167,33 +185,33 @@ def analyse_actions(participants):
             # CALCULATE WHETHER HDG COMMAND IS 'LEFT' OR 'RIGHT'
             # OR SPD COMMAND INCREASE OR DECREASE
             run.command_list['direction'] = 'N/A'
-            for index, row in run.command_list.iterrows():
-                if row.type == 'HDG':
+            for i_command, command in run.command_list.iterrows():
+                if command.type == 'HDG':
                     # Get HDG (hdg_deg) of respective aircraft (ACID) at the time of the command
-                    hdg_current = run.traffic.loc[(run.traffic['time'] == row.time) & (run.traffic['ACID'] == row.ACID), ['hdg_deg']]
-                    hdg_current = hdg_current.iloc[0][0]  # take value only
-                    hdg_resolution = row.value
+                    hdg_current = run.traffic.loc[(run.traffic['timestamp'] == str(command.timestamp_traffic)) & (run.traffic['ACID'] == command.ACID), ['hdg_deg']]
 
+                    hdg_current = hdg_current.iloc[0][0]  # take value only
+                    hdg_resolution = command.value
                     hdg_relative = hdg_resolution - hdg_current
                     # make sure hdg_rel is always between -180 and 180
                     if hdg_relative > 180:
                         hdg_relative -= 360
                     elif hdg_relative < -180:
                         hdg_relative += 360
-
                     # add direction value to Commands table
                     if hdg_relative > 0:
-                        run.command_list.loc[index, 'direction'] = 'right'
+                        run.command_list.loc[i_command, 'direction'] = 'right'
                     else:
-                        run.command_list.loc[index, 'direction'] = 'left'
-                elif row.type == 'SPD':
-                    if row.value > 250:
-                        run.command_list.loc[index, 'direction'] = 'increase'
-                    elif row.value < 250:
-                        run.command_list.loc[index, 'direction'] = 'decrease'
-                    elif row.value == 250:
-                        run.command_list.loc[index, 'direction'] = 'revert'
-
+                        run.command_list.loc[i_command, 'direction'] = 'left'
+                elif command.type == 'SPD':
+                    if command.value > 250:
+                        run.command_list.loc[i_command, 'direction'] = 'increase'
+                    elif command.value < 250:
+                        run.command_list.loc[i_command, 'direction'] = 'decrease'
+                    elif command.value == 250:
+                        run.command_list.loc[i_command, 'direction'] = 'revert'
+                # else:
+                #     print(command.type)
             """ HISTOGRAM OF RESOLUTIONS """
 
             SPD_mean = run.command_list[run.command_list.type == 'SPD'].mean()
@@ -221,7 +239,7 @@ def analyse_actions(participants):
             ax2.set_title('HDG commands')
             ax2.set_xlabel('HDG [deg]')
 
-            plt.savefig('figures/action_histogram.png', bbox_inches='tight')
+            plt.savefig('figures/action_histogram_run{}.png'.format(i_run), bbox_inches='tight')
             if settings.show_plots:
                 plt.show()
 
@@ -239,14 +257,15 @@ def analyse_actions(participants):
                           x='direction', order=['left', 'right'], ax=ax2)
             ax2.set_title('HDG commands (direction)')
             ax2.set_xlabel('Relative heading')
-            # if settings.show_plots:
-            plt.show()
+            plt.savefig('figures/relative_run{}.png'.format(i_run), bbox_inches='tight')
+            if settings.show_plots:
+                plt.show()
 
             ''' COMMAND TYPE TIMELINE '''
             fig, ax = plt.subplots()
-            sns.stripplot(data=run.command_list, x='time', y='type', jitter=0.01, ax=ax)
+            sns.stripplot(data=run.command_list, x='timestamp', y='type', jitter=0.01, ax=ax)
             plt.title('Commands given')
-            plt.savefig('figures/commands.png', bbox_inches='tight')
+            plt.savefig('figures/commands_run{}.png'.format(i_run), bbox_inches='tight')
             if settings.show_plots:
                 plt.show()
 
@@ -275,7 +294,7 @@ def analyse_actions(participants):
             sns.countplot(data=run.command_list_intruding, y='ACID', palette='Blues_d', order=intruding_ACIDs, ax=ax2)
             ax2.set_title('Intruding aircraft flow')
             ax2.set_xlim([0, 10])
-            plt.savefig('figures/ACIDS.png', bbox_inches='tight')
+            plt.savefig('figures/ACIDS_run{}.png'.format(i_run), bbox_inches='tight')
             if settings.show_plots:
                 plt.show()
 
@@ -323,7 +342,7 @@ def write_to_csv():
 if __name__ == "__main__":
     settings = config.Settings
     try:
-        participants = pickle.load(open("data/all_data.pickle", "rb"))
+        participants = pickle.load(open(settings.data_folder + settings.processed_data_filename, "rb"))
         print('Data loaded from Pickle')
     except FileNotFoundError:
         print('Start loading data.')

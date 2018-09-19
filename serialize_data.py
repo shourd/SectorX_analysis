@@ -15,7 +15,6 @@ def serialize_data():
 
     # Controller list
     participant_list = []
-    participant_names = []
 
     # Obtain list of xml files
     files = os.listdir(settings.data_folder)
@@ -23,9 +22,9 @@ def serialize_data():
     for i_file, file in enumerate(xml_files):
         print("Process " + file + "...")
 
+        participant_names = [participant.name for participant in participant_list]
         participant_name = file.split("_", 1)[0]
         if participant_name not in participant_names:
-            participant_names.append(participant_name)
             participant_list.append(Participant(participant_name))
         else:
             print('Participant already exists')

@@ -37,6 +37,7 @@ def create_dataframes():
 
             # print("Analyzing: " + run.participant + ' (run: ' + str(i_run) + ')')
             print('Participant: {} (run: {})'.format(run.participant, i_run+1))
+            print('Filename:', run.file_name)
 
             ''' STATE ANALYSIS '''
 
@@ -65,8 +66,8 @@ def create_dataframes():
                     df = pd.DataFrame(logpoint_data).transpose()
                     run.traffic = run.traffic.append(df)
 
-                if i_logpoint % 200 == 0:
-                    print('Analyzed time: {}s'.format(i_logpoint))
+                if i_logpoint % 50 == 0 and i_logpoint is not 0:
+                    print('Analyzed time: {}s'.format(i_logpoint*5))
 
                 """ ALL CONFLICTS ARE SAVED TO RUN.CONFLICTS """
 
@@ -93,10 +94,12 @@ def create_dataframes():
                         run.conflicts.loc[i_conflict] = conflict
                         i_conflict += 1
 
+            run.conflicts.timestamp = run.conflicts.timestamp.astype(float)
+
             ''' ALL COMMANDS ARE SAVED IN RUN.COMMAND_LIST '''
 
             run.traffic.columns = ['logpoint', 'timestamp', 'ACID', 'hdg_deg', 'hdg_comd',
-                                   'spd_kts', 'spd_cmd', 'x_nm', 'y_nm','selected']
+                                   'spd_kts', 'spd_cmd', 'x_nm', 'y_nm', 'selected']
 
             run.command_list = pd.DataFrame(columns=['timestamp',
                                                      'type',
@@ -128,7 +131,7 @@ def create_dataframes():
                     # print('Command type not recognized CMD:', i_command)
 
                 traffic_timestamps = [float(x) for x in run.traffic.timestamp.unique()]  # convert to floats
-                command.timestamp_traffic = command.timestamp - 1  # action always taken at previous state
+                command.timestamp_traffic = command.timestamp - 1  # command always taken at previous state
                 while command.timestamp_traffic not in traffic_timestamps:
                     command.timestamp_traffic -= 1
 
@@ -141,7 +144,6 @@ def create_dataframes():
 
             run.command_list = run.command_list[run.command_list.type != 'N/A']  # only take executed commands
             run.command_list.reset_index(drop=True)
-            print(run.command_list)
 
             runs.append(run)
         participants.append(runs)
@@ -154,16 +156,17 @@ def create_dataframes():
 def analyse_conflicts(participants):
     """ CONFLICT ANALYSIS """
     for participant in participants:
-        for run in participant:
+        for i_run, run in enumerate(participant):
 
-            float_columns = ['Angle', 'T_LOS', 'T_CPA', 'D_CPA']
-            run.conflicts[float_columns] = run.conflicts[float_columns].round(1)  #round all numerical columns
+            numerical_columns = ['timestamp', 'Angle', 'T_LOS', 'T_CPA', 'D_CPA']
+            run.conflicts[numerical_columns] = run.conflicts[numerical_columns].round(1)  # round all numerical columns
 
-            # print(run.conflicts)
-            fig, ax = plt.subplots(figsize=(4, 2))
+            """ PLOTTING CONFLICTS """
+            fig, ax = plt.subplots(figsize=(8, 2))
             sns.stripplot(data=run.conflicts, x='timestamp', ax=ax, jitter=False)
             plt.title('In conflict?')
-            plt.savefig('figures/in_conflict.png', bbox_inches='tight')
+            ax.set_xlim([0, 1200])
+            plt.savefig(settings.data_folder + 'figures/in_conflict_run{}.png'.format(i_run), bbox_inches='tight')
             if settings.show_plots:
                 plt.show()
 
@@ -171,13 +174,13 @@ def analyse_conflicts(participants):
             # print('Percentage of time in conflict: ', round(len(conflicts) / i_logpoint, 2))
 
 
-def analyse_actions(participants):
-    """ COMMAND / ACTION ANALYSIS """
+def analyse_commands(participants):
+    """ COMMAND / command ANALYSIS """
     for participant in participants:
         for i_run, run in enumerate(participant):
 
-            # CALCULATE NUMBER OF ACTIONS
-            num_actions = len(run.command_list)
+            # CALCULATE NUMBER OF COMMANDS
+            num_commands = len(run.command_list)
             num_spd = len(run.command_list[run.command_list.type == 'SPD'])
             num_hdg = len(run.command_list[run.command_list.type == 'HDG'])
             num_dct = len(run.command_list[run.command_list.type == 'DCT'])
@@ -210,14 +213,33 @@ def analyse_actions(participants):
                         run.command_list.loc[i_command, 'direction'] = 'decrease'
                     elif command.value == 250:
                         run.command_list.loc[i_command, 'direction'] = 'revert'
-                # else:
-                #     print(command.type)
+
+            """ DETERMINE CONTROL PREFERENCE (BEHIND OR IN FRONT) """
+            # intruding_ACIDs = run.traffic[(run.traffic.logpoint == 0) & (run.traffic.x_nm > 10)][['ACID']]
+            # intruding_ACIDs = list(intruding_ACIDs['ACID'])
+
+            main_flow_ACIDs = run.traffic[(run.traffic.logpoint == 0) & (run.traffic.x_nm < 10)][['ACID']]
+            main_flow_ACIDs = list(main_flow_ACIDs['ACID'])
+
+            run.command_list['preference'] = 'N/A'
+            for i_command, command in run.command_list.iterrows():
+                if command.ACID in main_flow_ACIDs:
+                    if command.direction is 'right' or command.direction is 'decrease':
+                        run.command_list.loc[i_command, 'preference'] = 'behind'
+                    elif command.direction is 'left' or command.direction is 'increase':
+                        run.command_list.loc[i_command, 'preference'] = 'infront'
+                else:
+                    if command.direction is 'left' or command.direction is 'decrease':
+                        run.command_list.loc[i_command, 'preference'] = 'behind'
+                    elif command.direction is 'right' or command.direction is 'increase':
+                        run.command_list.loc[i_command, 'preference'] = 'infront'
+
             """ HISTOGRAM OF RESOLUTIONS """
 
-            SPD_mean = run.command_list[run.command_list.type == 'SPD'].mean()
-            SPD_mean = SPD_mean.loc['value']
-            HDG_mean = run.command_list[run.command_list.type == 'HDG'].mean()
-            HDG_mean = HDG_mean.loc['value']
+            # SPD_mean = run.command_list[run.command_list.type == 'SPD'].mean()
+            # SPD_mean = SPD_mean.loc['value']
+            # HDG_mean = run.command_list[run.command_list.type == 'HDG'].mean()
+            # HDG_mean = HDG_mean.loc['value']
             # print(SPD_mean)
             # print(HDG_mean)
 
@@ -239,12 +261,11 @@ def analyse_actions(participants):
             ax2.set_title('HDG commands')
             ax2.set_xlabel('HDG [deg]')
 
-            plt.savefig('figures/action_histogram_run{}.png'.format(i_run), bbox_inches='tight')
+            plt.savefig(settings.data_folder + 'figures/command_histogram_run{}.png'.format(i_run), bbox_inches='tight')
             if settings.show_plots:
                 plt.show()
 
             ''' LEFT/RIGHT or INCREASE/DECREASE '''
-            # TODO: MAKE BARPLOT with increase decrease left right.
             fig, (ax1, ax2) = plt.subplots(1, 2)
             fig.suptitle('Relative commands')
 
@@ -257,15 +278,24 @@ def analyse_actions(participants):
                           x='direction', order=['left', 'right'], ax=ax2)
             ax2.set_title('HDG commands (direction)')
             ax2.set_xlabel('Relative heading')
-            plt.savefig('figures/relative_run{}.png'.format(i_run), bbox_inches='tight')
+            plt.savefig(settings.data_folder + 'figures/relative_run{}.png'.format(i_run), bbox_inches='tight')
             if settings.show_plots:
                 plt.show()
+
+            """ CONTROL PREFERENCE """
+            # TODO: Calculate control preferences (and relative commands) in terms of percentages
+            fig, ax = plt.subplots()
+            sns.countplot(data=run.command_list[run.command_list.preference != 'N/A']
+                          , x='preference', ax=ax)
+            ax.set_title('Control preference')
+            plt.savefig(settings.data_folder + 'figures/preference_run{}.png'.format(i_run), bbox_inches='tight')
+            plt.close()
 
             ''' COMMAND TYPE TIMELINE '''
             fig, ax = plt.subplots()
             sns.stripplot(data=run.command_list, x='timestamp', y='type', jitter=0.01, ax=ax)
             plt.title('Commands given')
-            plt.savefig('figures/commands_run{}.png'.format(i_run), bbox_inches='tight')
+            plt.savefig(settings.data_folder + 'figures/commands_run{}.png'.format(i_run), bbox_inches='tight')
             if settings.show_plots:
                 plt.show()
 
@@ -282,8 +312,8 @@ def analyse_actions(participants):
 
             run.command_list_main = run.command_list.loc[run.command_list.ACID.isin(main_flow_ACIDs)]
             run.command_list_intruding = run.command_list.loc[np.logical_not(run.command_list.ACID.isin(main_flow_ACIDs))]
-            num_actions_main = len(run.command_list_main)
-            num_actions_intruding = len(run.command_list_intruding)
+            num_commands_main = len(run.command_list_main)
+            num_commands_intruding = len(run.command_list_intruding)
 
             fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
 
@@ -294,21 +324,21 @@ def analyse_actions(participants):
             sns.countplot(data=run.command_list_intruding, y='ACID', palette='Blues_d', order=intruding_ACIDs, ax=ax2)
             ax2.set_title('Intruding aircraft flow')
             ax2.set_xlim([0, 10])
-            plt.savefig('figures/ACIDS_run{}.png'.format(i_run), bbox_inches='tight')
+            plt.savefig(settings.data_folder + 'figures/ACIDS_run{}.png'.format(i_run), bbox_inches='tight')
             if settings.show_plots:
                 plt.show()
 
             """ CONSISTENCY REPORT """
             print('----------- Consistency Report ------------')
-            print('Total actions:', num_actions)
-            print('SPD actions:', num_spd)
-            print('HDG actions:', num_hdg)
-            print('DCT actions:', num_dct)
+            print('Total commands:', num_commands)
+            print('SPD commands:', num_spd)
+            print('HDG commands:', num_hdg)
+            print('DCT commands:', num_dct)
             if num_spd > num_hdg:
                 print('Preferred resolution: SPD ({})'.format(num_spd))
 
-            print('Total actions (Main flow):', num_actions_main)
-            print('Total actions (Intruding flow):', num_actions_intruding)
+            print('Total commands (Main flow):', num_commands_main)
+            print('Total commands (Intruding flow):', num_commands_intruding)
 
 
 def write_to_csv():
@@ -321,7 +351,7 @@ def write_to_csv():
                   "Subject",
                   "Scenario",
                   "SectorCoordinates",
-                  "Total actions",
+                  "Total commands",
                   "numOfHDG",
                   "numOfSPD"]
 
@@ -335,7 +365,7 @@ def write_to_csv():
     #                      run.subject,
     #                      run.scenario.file,
     #                      sector_points,
-    #                      num_actions, num_hdg, num_spd])
+    #                      num_commands, num_hdg, num_spd])
     csv_file.close()
 
 
@@ -349,5 +379,5 @@ if __name__ == "__main__":
         participants = create_dataframes()  # contains all data from XML files
 
     analyse_conflicts(participants)
-    analyse_actions(participants)
+    analyse_commands(participants)
 

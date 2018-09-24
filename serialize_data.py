@@ -16,12 +16,16 @@ def serialize_data():
     # Controller list
     participant_list = []
 
-    # Obtain list of xml files
+    # Obtain list of xml files and remove .xml extension
     files = os.listdir(settings.data_folder)
-    xml_files = [file for file in files if '.xml' in file]
+    xml_files = [file[:-4] for file in files if '.xml' in file]
+    print('Number of runs:', len(xml_files))
+    xml_files = sorted(xml_files, key=lambda x: int(x[-1]))
+    xml_files = [file+'.xml' for file in xml_files]
     for i_file, file in enumerate(xml_files):
+        # file = file[:-5] + str(i_file+1) + '.xml'
         print("Process " + file + "...")
-
+        i_run = int(file[-5])
         participant_names = [participant.name for participant in participant_list]
         participant_name = file.split("_", 1)[0]
         if participant_name not in participant_names:

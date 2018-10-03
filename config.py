@@ -13,4 +13,6 @@ class Settings:
     figsize1 = (5, 5)
     figsize2 = (10, 5)
     figsize3 = (15, 5)
-
+    # SSD IMPORT SETTINGS
+    ssd_folder = 'ssd'
+    ssd_import_size = (128, 128)

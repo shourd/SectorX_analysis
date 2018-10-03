@@ -11,8 +11,6 @@ def serialize_data():
     """ Convert XML files to python Classes/objects """
     print("Start serialization...")
 
-    settings = Settings
-
     # Controller list
     participant_list = []
 
@@ -60,14 +58,16 @@ def serialize_data():
 
         participant_list[i_participant].runs.append(run)
 
-    print("Saved serialized data to " + settings.serialized_data_filename)
-
     # Serialize the controller list
     pickle_file = open(settings.data_folder + settings.serialized_data_filename, "wb")
     pickle.dump(participant_list, pickle_file)
     pickle_file.close()
+    print("Saved serialized data to " + settings.serialized_data_filename)
 
 
 if __name__ == "__main__":
+    settings = Settings
+    settings.data_folder = settings.data_folder + '/test/'
     serialize_data()
+    print('Finished')
 

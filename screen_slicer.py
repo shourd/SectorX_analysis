@@ -17,7 +17,7 @@ def screen_slicer(size, input_folder, output_folder):
     for fname in png_files:
         # fname = glob('{}*'.format(fname))[0]  # take only first entry
         screenshot = Image.open(settings.data_folder + input_folder + '/' + fname)
-        # ssd = ssd.convert("L")  # convert to greyscale
+        # ssd = ssd.convert("L")  # convert to grayscale
         screenshot_width, screenshot_height = screenshot.size
         left = 0
         top = screenshot_height - 128

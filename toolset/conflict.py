@@ -3,10 +3,11 @@ from tools import ISA_IAStoTAS_kts, ftToNm, nmToFt
 import math
 import numpy
 from shapely import geometry
+from config import Settings
 
 
-def get_conflicts(aircraft_list, caution_time, warning_time, account_for_TOC, sector_points, distance_to_sector):
-
+def get_conflicts(aircraft_list, sector_points, settings):
+    account_for_TOC = False
     # Conflict list
     conflict_list = []
 
@@ -74,13 +75,13 @@ def get_conflicts(aircraft_list, caution_time, warning_time, account_for_TOC, se
             if (  # Positive time to LOS
                 t_CPA > 0 and
                 # Time to LOS is less than the caution time
-                t_LOS < caution_time / 3600 and
+                t_LOS < settings.caution_time / 3600 and
                 # Will have vertical LOS
                 numpy.round(numpy.abs(relative_aircraft.alt_ft - aircraft.alt_ft)) < 1000 and
                 # Will have horizontal LOS
                 math.hypot(relative_aircraft_pos_at_CPA[0] - aircraft_pos_at_CPA[0], relative_aircraft_pos_at_CPA[1] - aircraft_pos_at_CPA[1]) < 5 and
                 # Check if aircraft is not too far from the sector
-                sector_polygon.distance(geometry.Point(aircraft_pos)) < distance_to_sector and
+                sector_polygon.distance(geometry.Point(aircraft_pos)) < settings.distance_to_sector and
                 # Check if a TOC has been issued
                 not(account_for_TOC and aircraft.toc and relative_aircraft.toc)):
                     in_conflict = True
@@ -112,3 +113,4 @@ def get_conflicts(aircraft_list, caution_time, warning_time, account_for_TOC, se
     
     # Return the conflict list                    
     return conflict_list
+

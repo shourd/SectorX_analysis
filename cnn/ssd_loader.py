@@ -5,7 +5,7 @@ from PIL import Image
 import pandas as pd
 
 
-def ssd_loader():
+def ssd_loader(settings):
     filelist = os.listdir(settings.ssd_folder)
     filelist = [file for file in filelist if '.png' in file]
     print('Number of SSDs:', len(filelist))
@@ -36,7 +36,7 @@ def ssd_loader():
     ssd_stack = ssd_stack.reshape(ssd_stack.shape[0], settings.ssd_import_size[0], settings.ssd_import_size[1], 3)
 
     actions.set_index('TIME', inplace=True)
-    actions.sort_index(inplace=True)
+    # actions.sort_index(inplace=True)
 
     # returns (samples, dimension1, dimension2, 1) array with images.
     return ssd_stack, actions
@@ -44,4 +44,4 @@ def ssd_loader():
 
 if __name__ == "__main__":
     settings = Settings
-    ssd_loader()
+    ssd_loader(settings)

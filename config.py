@@ -16,3 +16,15 @@ class Settings:
     # SSD IMPORT SETTINGS
     ssd_folder = 'ssd'
     ssd_import_size = (128, 128)
+    # CNN TRAIN SETTINGS
+    train_val_ratio = 0.8
+    model_name = 'model'
+    epochs = 30
+    batch_size = 128
+    steps_per_epoch = 5900 / 128
+    rotation_range = 0  # the maxium degree of random rotation for data augmentation
+    num_classes = 3  # amount of resolution classes (2, 4, 6, or 12)
+    randomize_fraction = 0  # Randomize percentage of samples to simulate human randomness
+    save_model = False  # save trained model to disk
+    reload_data = False
+    output_dir = 'output'

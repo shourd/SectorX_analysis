@@ -10,5 +10,7 @@ class Settings:
     serialized_data_filename = "serialized_data.p"
     processed_data_filename = 'processed_data.p'
     columns = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10', 'P11', 'P12']
-    total_participants = 6
+    figsize1 = (5, 5)
+    figsize2 = (10, 5)
+    figsize3 = (15, 5)
 

@@ -20,12 +20,13 @@ def ssd_trainer(x_data, actions):
     res_list = []
     for command in actions_type:
         if command == 'HDG': res = 0
-        if command == 'SPD': res = 1
-        if command == 'DCT': res = 2
+        elif command == 'SPD': res = 1
+        elif command == 'DCT': res = 2
+        # elif command == 'TOC': res = 3
+        else:
+            print('error')
         res_list.append(res)
-    print(res_list)
-    y_data = keras.utils.to_categorical(res_list, 3)
-    print(y_data)
+    y_data = keras.utils.to_categorical(res_list, settings.num_classes)
 
     """ SPLIT TRAIN AND VALIDATION DATA """
     train_length = int(settings.train_val_ratio * len(x_data))
@@ -36,7 +37,7 @@ def ssd_trainer(x_data, actions):
     y_val = y_data[train_length:, :]
 
     data_length = len(x_train) + len(x_val)
-    print('Amount of SSDs: {} ({} train / {} val)'.format(data_length, len(x_train), len(x_val)))
+    print('Number of SSDs to network: {} ({} train / {} val)'.format(data_length, len(x_train), len(x_val)))
 
     """ CREATING THE NEURAL NETWORK """
     model = Sequential()
@@ -44,12 +45,12 @@ def ssd_trainer(x_data, actions):
     model.add(keras.layers.InputLayer(input_shape=input_shape))
 
     # BASELINE ARCHITECTURE
-    model.add(Conv2D(32, kernel_size=(5, 5), strides=(1, 1), activation='relu'))
-    if settings.ssd_import_size[0] > 32:
-        model.add(MaxPooling2D(pool_size=(4, 4)))
-    model.add(Conv2D(64, kernel_size=(5, 5), strides=(1, 1), activation='relu'))
-    if settings.ssd_import_size[0] > 16:
-        model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(32, kernel_size=(10, 10), strides=(1, 1), activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(64, kernel_size=(10, 10), strides=(1, 1), activation='relu'))
+    # model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(64, kernel_size=(10, 10), strides=(1, 1), activation='relu'))
+    # model.add(Conv2D(64, kernel_size=(10, 10), strides=(1, 1), activation='relu'))
 
     # Flattening and FC
     model.add(Flatten())
@@ -130,6 +131,7 @@ def ssd_trainer(x_data, actions):
     test_loss = round(score[0], 3)
     test_accuracy = round(score[1], 3)
     # train_time = int(time.time() - start_time)
+    print(test_accuracy)
 
 
 if __name__ == "__main__":

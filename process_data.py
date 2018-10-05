@@ -1,5 +1,4 @@
 from toolset.get_relevant_aircraft import get_relevant_aircraft
-import csv
 import pickle
 from toolset.conflict import get_conflicts
 import config
@@ -363,7 +362,7 @@ def load_from_pickle():
 
 if __name__ == "__main__":
     settings = config.Settings
-    settings.data_folder = settings.data_folder + '/all/'
+    # settings.data_folder = settings.data_folder + '/all/'
 
     try:
         # participants = pickle.load(open(settings.data_folder + settings.processed_data_filename, "rb"))

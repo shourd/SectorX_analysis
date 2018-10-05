@@ -3,7 +3,7 @@ AUTHOR: TJITTE DE JONG
 EDITED BY: SJOERD VAN ROOIJEN
 """
 
-from tools import strToBool
+from toolset.tools import strToBool
 
 
 class Participant:

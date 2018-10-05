@@ -1,9 +1,8 @@
 import os
 import xml.etree.ElementTree as ET
 import pickle
-import sys
 import re
-from data_objects import Participant, Run, Run, Command
+from toolset.data_objects import Participant, Run, Run, Command
 from config import Settings
 
 
@@ -67,7 +66,7 @@ def serialize_data():
 
 if __name__ == "__main__":
     settings = Settings
-    settings.data_folder = settings.data_folder + '/test/'
+    settings.data_folder = settings.data_folder + '/P8/'
     serialize_data()
     print('Finished')
 

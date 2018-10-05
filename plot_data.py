@@ -14,15 +14,27 @@ def plot_commands(all_dataframes):
     # sns.set_palette("GnBu_d")
 
     """ COUNT OF ALL COMMANDS """
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=settings.figsize2)
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=settings.figsize3)
     sns.countplot(data=df_commands, x='participant_id', hue='run_id', ax=ax1)
     sns.countplot(data=df_commands[df_commands.type != 'N/A'], x='participant_id', hue='type', ax=ax2)
-    fig.suptitle('Title')
+    sns.countplot(data=df_commands, x='participant_id', hue='SSD', ax=ax3)
+    fig.suptitle('Command Count per Run')
     # ax1.set_title('Subtitle')
     # ax2.set_title('Subtitle')
     ax1.set_xlabel('Particpant ID')
     ax2.set_xlabel('Participant ID')
+    ax3.set_xlabel('Participant ID')
     plt.savefig(settings.data_folder + 'figures/command_count.png', bbox_inches='tight')
+    plt.close()
+
+    """ COMMAND TYPE PER CONDITION """
+    fig, (ax1) = plt.subplots(1, 1, figsize=settings.figsize1)
+    sns.countplot(data=df_commands, x='type', hue='SSD', ax=ax1)
+    fig.suptitle('Command Count per Run')
+    # ax1.set_title('Subtitle')
+    # ax2.set_title('Subtitle')
+    ax1.set_xlabel('Command type')
+    plt.savefig(settings.data_folder + 'figures/command_type.png', bbox_inches='tight')
     plt.close()
 
     """ DIRECTION AND CONTROL PREFERENCE """
@@ -34,7 +46,7 @@ def plot_commands(all_dataframes):
     sns.countplot(data=data_direction_spd, x='participant_id', hue='direction', hue_order=['decrease', 'increase'], ax=ax1)
     sns.countplot(data=data_direction_hdg, x='participant_id', hue='direction', hue_order=['left', 'right'], ax=ax2)
     sns.countplot(data=df_commands[df_commands.preference != 'N/A'], x='participant_id', hue='preference', ax=ax3)
-    fig.suptitle('Title')
+    fig.suptitle('Command preferences')
     ax1.set_title('Speed')
     ax2.set_title('Heading')
     ax3.set_title('Control preference')
@@ -59,12 +71,15 @@ def plot_commands(all_dataframes):
     plt.savefig(settings.data_folder + 'figures/command_values.png', bbox_inches='tight')
     plt.close()
 
+    print('test')
     """ FACTOR PLOT COMMAND VALUES """
     hdg_commands = df_commands[df_commands.type == 'HDG']
-
-    hdg_commands.value = hdg_commands.value.apply(lambda x: custom_round(x, base=20))
+    pd.options.mode.chained_assignment = None # surprsses the copy warning from following statement:
+    hdg_commands.loc[:, 'value'] = hdg_commands.value.apply(lambda x: custom_round(x, base=20))
+    pd.options.mode.chained_assignment = 'warn'
     sns.catplot(x='value', col='participant_id', col_wrap=3, data=hdg_commands, kind='count')
     plt.savefig(settings.data_folder + 'figures/facet_command_values.png', bbox_inches='tight')
+    plt.close()
 
     ''' COMMAND TYPE TIMELINE '''
     df_commands_spd = df_commands[df_commands.type == 'SPD']
@@ -88,7 +103,6 @@ def plot_commands(all_dataframes):
     g.fig.subplots_adjust(top=.9)
     plt.savefig(settings.data_folder + 'figures/commands_over_time_dct.png', bbox_inches='tight')
 
-    plt.show()
     plt.close()
 
 
@@ -178,18 +192,19 @@ def plot_traffic(all_dataframes):
 
 if __name__ == "__main__":
     settings = config.Settings
-    settings.data_folder = settings.data_folder + '/all/'
 
     # plot settings
     sns.set()
     sns.set_context("notebook")  # smaller: paper
 
-    try:
-        # participants = pickle.load(open(settings.data_folder + settings.processed_data_filename, "rb"))
-        all_data = pickle.load(open(settings.data_folder + 'all_dataframes.p', "rb"))
-        print('Data loaded from Pickle')
-    except FileNotFoundError:
-        print('Pickle all_dataframes.p not found. Please run process_data.py')
+    all_data = pickle.load(open(settings.data_folder + 'all_dataframes.p', "rb"))
 
-    # plot_commands(all_data)
-    plot_traffic(all_data)
+    # try:
+    #     # participants = pickle.load(open(settings.data_folder + settings.processed_data_filename, "rb"))
+    #
+    #     print('Data loaded from Pickle')
+    # except FileNotFoundError:
+    #     print('Pickle all_dataframes.p not found. Please run process_data.py')
+
+    plot_commands(all_data)
+    # plot_traffic(all_data)

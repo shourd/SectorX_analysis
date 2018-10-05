@@ -7,7 +7,7 @@ import os
 import pickle
 
 
-def screen_slicer(size, input_folder, output_folder):
+def screen_slicer(size, input_folder, output_folder, prefix):
     files = os.listdir(settings.data_folder + input_folder)
     png_files = [file for file in files if '.png' in file]
     print('Number of files:', len(png_files))
@@ -26,7 +26,8 @@ def screen_slicer(size, input_folder, output_folder):
         ssd = screenshot.crop((left, top, right, bottom))
         # ssd.show()
         ssd = ssd.resize(size, Image.BILINEAR)
-        filepath = settings.data_folder + input_folder + '/' + output_folder + '/' + fname[6:]
+        filename = prefix + fname[6:]
+        filepath = 'data/' + output_folder + '/' + filename
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         ssd.save(filepath)
         ssd = np.array(ssd)
@@ -43,7 +44,7 @@ if __name__ == "__main__":
     settings = Settings
     size = (128, 128)
     print('Start loading SSDs...')
-    output_folder = 'crop'
+    output_folder = 'crop_all'
     participants = 3
     runs = 4
     for p in range(participants):
@@ -51,7 +52,8 @@ if __name__ == "__main__":
         for r in range(runs):
             settings.data_folder = 'data/P{}/'.format(p + 1)
             input_folder = 'P{}_run{}'.format(p + 1, r + 1)
-            ssd_stack = screen_slicer(size, input_folder, output_folder)
+            filename_prefix = 'P{}-R{}-'.format(p + 1, r + 1)
+            ssd_stack = screen_slicer(size, input_folder, output_folder, filename_prefix)
 
             # save data
             pickle_name = 'SSDs_{}.pickle'.format(input_folder)

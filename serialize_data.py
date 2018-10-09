@@ -16,19 +16,19 @@ def serialize_data():
     # Obtain list of xml files and remove .xml extension
     files = os.listdir(settings.data_folder)
     xml_files = [file[:-4] for file in files if '.xml' in file]
+    xml_files.sort()
     print('Number of runs:', len(xml_files))
-    xml_files = sorted(xml_files, key=lambda x: int(x[-1]))
+    # xml_files = sorted(xml_files, key=lambda x: int(x[-1]))
     xml_files = [file+'.xml' for file in xml_files]
     for i_file, file in enumerate(xml_files):
-        # file = file[:-5] + str(i_file+1) + '.xml'
-        print("Process " + file + "...")
         i_run = int(file[-5])
         participant_names = [participant.name for participant in participant_list]
         participant_name = file.split("_", 1)[0]
         if participant_name not in participant_names:
             participant_list.append(Participant(participant_name))
-        else:
-            print('Participant already exists')
+            print('New participant created')
+
+        print("Process " + file + "...")
 
         # obtain participant number (index) in list
         for index, participant in enumerate(participant_list):
@@ -41,9 +41,7 @@ def serialize_data():
         run = Run(root_element, file[:-4])
 
         """ CONTINUE WITH MSG FILE """
-        # change .xml filename to .msg filename
-        file = file[:-4] + '.msg'
-        print("Process " + file + "...")
+        file = file[:-4] + '.msg' # change .xml filename to .msg filename
         # Read the commands from the message file and skip the header
         msg_file = open(settings.data_folder + file, "r", newline="")
         subject = re.findall("subject:(.*),", msg_file.readline())[0]
@@ -66,7 +64,7 @@ def serialize_data():
 
 if __name__ == "__main__":
     settings = Settings
-    settings.data_folder = settings.data_folder + '/P8/'
+    settings.data_folder = settings.data_folder
     serialize_data()
     print('Finished')
 

@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 from os import mkdir
+from plot_data import plot_traffic, plot_commands
 
 
 def create_dataframes():
@@ -373,8 +374,8 @@ if __name__ == "__main__":
         all_data = create_dataframes()  # contains all data from XML files
         all_data = analyse_commands(all_data)
 
-    analyse_conflicts(participants)
-    # plot_commands(all_data)
+    # analyse_conflicts(participants)
+    plot_commands(all_data)
     plot_traffic(all_data)
 
 

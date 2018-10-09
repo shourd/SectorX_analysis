@@ -1,7 +1,7 @@
 import numpy as np
 from config import Settings
 import pandas as pd
-from cnn.ssd_loader import ssd_loader
+from ssd_loader import ssd_loader
 import keras
 from keras.layers import Dense, Flatten
 from keras.layers import Conv2D, MaxPooling2D
@@ -10,21 +10,38 @@ from keras.utils import plot_model
 from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import ModelCheckpoint
 from os import environ, path, makedirs
+import pickle
 
 
-def ssd_trainer(x_data, actions):
+def ssd_trainer(ssd_data, actions_df):
 
     iteration_name = 'model'
 
-    actions_type = list(actions.TYPE)
+    """ FILTER ACTIONS """
+    participant_ids = ['P2']
+    run_ids = ['R1', 'R2', 'R3', 'R4']
+    action_types = ['SPD', 'HDG']
+    settings.num_classes = len(action_types)
+
+    actions_df.reset_index(inplace=True)  # create an ID for all actions
+    # actions_df = actions_df[actions_df.PARTICIPANT_ID in participant_ids]
+    actions_filtered = actions_df.loc[(actions_df.PARTICIPANT_ID.isin(participant_ids)) &
+                                      (actions_df.RUN_ID.isin(run_ids)) &
+                                      (actions_df.TYPE.isin(action_types))]
+
+    actions_ids = actions_filtered.index.unique()
+    x_data = ssd_data[actions_ids, :, :, :]
+    print('Speed commands:', len(actions_filtered[actions_filtered.TYPE == 'SPD']))
+
     res_list = []
-    for command in actions_type:
+    for command in list(actions_filtered.TYPE):
         if command == 'HDG': res = 0
         elif command == 'SPD': res = 1
         elif command == 'DCT': res = 2
-        # elif command == 'TOC': res = 3
+        elif command == 'TOC': res = 3
         else:
-            print('error')
+            print('ERROR: Command type not recognized')
+            break
         res_list.append(res)
     y_data = keras.utils.to_categorical(res_list, settings.num_classes)
 
@@ -131,10 +148,17 @@ def ssd_trainer(x_data, actions):
     test_loss = round(score[0], 3)
     test_accuracy = round(score[1], 3)
     # train_time = int(time.time() - start_time)
-    print(test_accuracy)
+    print('Test accuracy:',test_accuracy)
 
 
 if __name__ == "__main__":
     settings = Settings
-    ssd_stack, actions = ssd_loader(settings)
+    try:
+        actions = pickle.load(open(settings.data_folder + 'actions.p', "rb"))
+        ssd_stack = pickle.load(open(settings.data_folder + 'SSDs.p', "rb"))
+        print('Data loaded from pickle')
+    except FileNotFoundError:
+        print('Start importing data from image files')
+        ssd_stack, actions = ssd_loader(settings)
+
     ssd_trainer(ssd_stack, actions)

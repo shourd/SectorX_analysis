@@ -33,7 +33,7 @@ def screen_slicer(size, input_folder, output_folder, prefix):
         ssd = np.array(ssd)
         ssd_stack.append(ssd)
 
-    ssd_stack = np.array(ssd_stack) # dimensions: (sample_num, x_size, y_size, number of color bands)
+    ssd_stack = np.array(ssd_stack)  # dimensions: (sample_num, x_size, y_size, number of color bands)
     ssd_stack = ssd_stack.astype('float32')
     ssd_stack /= 255
 

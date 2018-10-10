@@ -34,7 +34,7 @@ def ssd_loader(settings):
             command.run_id, \
             command.timestamp, \
             command.ACID, \
-            command.command = command_split[0:6]
+            command.command = command_split[0:5]
             if len(command_split) > 6:
                 print('Second command ignored:', filename)
 

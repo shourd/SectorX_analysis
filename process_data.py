@@ -57,6 +57,7 @@ def create_dataframes():
             i_conflict = 0
 
             temp_traffic_df = initialize_traffic_dataframe()
+
             for i_logpoint, logpoint in enumerate(run.logpoints):
 
                 score.append(logpoint.score)
@@ -130,12 +131,14 @@ def create_dataframes():
     df_commands = df_commands.reset_index()
     df_commands = df_commands.set_index(['participant_id', 'run_id', 'index'])
     df_commands.index.names = ['participant_id', 'run_id', 'i_command']
+    df_commands = df_commands[df_commands.type != 'N/A']
     df_commands['direction'] = 'N/A'
     df_commands['preference'] = 'N/A'
 
     df_traffic = df_traffic.reset_index()
     df_traffic = df_traffic.set_index(['participant_id', 'run_id', 'index'])
     df_traffic.index.names = ['participant_id', 'run_id', 'i_aircraft']
+    df_traffic.timestamp = df_traffic.timestamp.astype('float')
 
     all_dataframes = {
         "traffic": df_traffic.sort_index(),
@@ -184,14 +187,11 @@ def analyse_conflicts(participants):
 def analyse_commands(all_dataframes):
     """ COMMAND ANALYSIS """
 
-    # TODO: rerun pickel then remove sort_index here.
-    df_commands = all_dataframes['commands'].sort_index()
-    df_commands = df_commands[df_commands.type != 'N/A']
-    df_traffic = all_dataframes['traffic'].sort_index()
+    df_traffic = all_dataframes['traffic']
+    df_commands = all_dataframes['commands']
 
     for participant_id in all_dataframes['participants']:
         for run_id in all_dataframes['runs']:
-
             df_traffic_run = df_traffic.loc[(participant_id, run_id)]
             df_commands_run = df_commands.loc[(participant_id, run_id)]
             directions = determine_directional_values(df_traffic_run, df_commands_run)
@@ -204,7 +204,7 @@ def analyse_commands(all_dataframes):
     all_dataframes['commands'] = df_commands
     all_dataframes['traffic'] = df_traffic
 
-    pickle.dump(all_dataframes, open(settings.data_folder + 'all_dataframes.p', "wb"))
+    pickle.dump(all_dataframes, open(settings.data_folder + settings.processed_data_filename, "wb"))
     print('Data saved to pickle')
 
     return all_dataframes
@@ -218,32 +218,37 @@ def determine_directional_values(df_traffic, df_commands):
 
     directions = ['N/A'] * len(df_commands)
 
-    for i_command, command in df_commands.iterrows():
-        if command.type == 'HDG':
-            # Get HDG (hdg_deg) of respective aircraft (ACID) at the time of the command
-            hdg_current = df_traffic.loc[
-                (df_traffic['timestamp'] == str(command.timestamp_traffic)) & (df_traffic['ACID'] == command.ACID), [
-                    'hdg_deg']]
-            hdg_current = hdg_current.iloc[0][0]  # take value only
-            hdg_resolution = command.value
-            hdg_relative = hdg_resolution - hdg_current
-            # make sure hdg_rel is always between -180 and 180
-            if hdg_relative > 180:
-                hdg_relative -= 360
-            elif hdg_relative < -180:
-                hdg_relative += 360
-            # add direction value to Commands table
-            if hdg_relative > 0:
-                directions[i_command] = 'right'
-            else:
-                directions[i_command] = 'left'
-        elif command.type == 'SPD':
-            if command.value > 250:
-                directions[i_command] = 'increase'
-            elif command.value < 250:
-                directions[i_command] = 'decrease'
-            elif command.value == 250:
-                directions[i_command] = 'revert'
+    for i_command in range(len(df_commands)):
+        command = df_commands.iloc[i_command]
+        try:
+            if command.type == 'HDG':
+                # Get HDG (hdg_deg) of respective aircraft (ACID) at the time of the command
+                hdg_current = df_traffic.loc[
+                    (df_traffic['timestamp'] == command.timestamp_traffic) & (df_traffic['ACID'] == command.ACID), [
+                        'hdg_deg']]
+                hdg_current = hdg_current.iloc[0][0]  # take value only
+                hdg_resolution = command.value
+                hdg_relative = hdg_resolution - hdg_current
+                # make sure hdg_rel is always between -180 and 180
+                if hdg_relative > 180:
+                    hdg_relative -= 360
+                elif hdg_relative < -180:
+                    hdg_relative += 360
+                # add direction value to Commands table
+                if hdg_relative > 0:
+                    directions[i_command] = 'right'
+                else:
+                    directions[i_command] = 'left'
+            elif command.type == 'SPD':
+                if command.value > 250:
+                    directions[i_command] = 'increase'
+                elif command.value < 250:
+                    directions[i_command] = 'decrease'
+                elif command.value == 250:
+                    directions[i_command] = 'revert'
+        except IndexError:
+            print(df_commands.to_string())
+            print('Index Error!')
 
     return directions
 
@@ -256,17 +261,21 @@ def determine_control_preference(df_traffic, df_commands):
     main_flow_ACIDs = df_traffic[(df_traffic.i_logpoint == 0) & (df_traffic.x_nm < 10)][['ACID']]
     main_flow_ACIDs = list(main_flow_ACIDs['ACID'])
 
-    for i_command, command in df_commands.iterrows():
-        if command.ACID in main_flow_ACIDs:
-            if command.direction is 'right' or command.direction is 'decrease':
-                preferences[i_command] = 'behind'
-            elif command.direction is 'left' or command.direction is 'increase':
-                preferences[i_command] = 'infront'
-        else:
-            if command.direction is 'left' or command.direction is 'decrease':
-                preferences[i_command] = 'behind'
-            elif command.direction is 'right' or command.direction is 'increase':
-                preferences[i_command] = 'infront'
+    for i_command in range(len(df_commands)):
+        command = df_commands.iloc[i_command]
+        try:
+            if command.ACID in main_flow_ACIDs:
+                if command.direction is 'right' or command.direction is 'decrease':
+                    preferences[i_command] = 'behind'
+                elif command.direction is 'left' or command.direction is 'increase':
+                    preferences[i_command] = 'infront'
+            else:
+                if command.direction is 'left' or command.direction is 'decrease':
+                    preferences[i_command] = 'behind'
+                elif command.direction is 'right' or command.direction is 'increase':
+                    preferences[i_command] = 'infront'
+        except IndexError:
+            print('Index error! part II')
 
     return preferences
 
@@ -367,15 +376,18 @@ if __name__ == "__main__":
 
     try:
         # participants = pickle.load(open(settings.data_folder + settings.processed_data_filename, "rb"))
-        all_data = pickle.load(open(settings.data_folder + 'all_dataframes.p', "rb"))
+        all_data = pickle.load(open(settings.data_folder + settings.processed_data_filename, "rb"))
         print('Data loaded from Pickle')
     except FileNotFoundError:
         print('Start loading data.')
-        all_data = create_dataframes()  # contains all data from XML files
-        all_data = analyse_commands(all_data)
+        all_data = create_dataframes()  # generates all_dataframes.p
+        print('Dataframes created and saved to Pickle')
+        all_data = analyse_commands(all_data)  # generates all_dataframes_2.p
+        print('Commands analyzed and saved to Pickle')
 
     # analyse_conflicts(participants)
-    plot_commands(all_data)
-    plot_traffic(all_data)
+    print('Start plotting')
+    plot_commands(all_data, settings)
+    # plot_traffic(all_data, settings)
 
 

@@ -3,9 +3,16 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import config
 import pickle
+import os
 
 
-def plot_commands(all_dataframes):
+def plot_commands(all_dataframes, settings):
+    # TODO: EFFECT SSD ON CONSISTENCY
+    # plot settings
+    sns.set()
+    sns.set_context("notebook")   # smaller: paper
+
+    os.makedirs(os.path.dirname('figures/'), exist_ok=True)
     df_commands = all_dataframes['commands'].reset_index()
     # df_traffic = all_dataframes['traffic'].reset_index()
 
@@ -71,7 +78,6 @@ def plot_commands(all_dataframes):
     plt.savefig(settings.data_folder + 'figures/command_values.png', bbox_inches='tight')
     plt.close()
 
-    print('test')
     """ FACTOR PLOT COMMAND VALUES """
     hdg_commands = df_commands[df_commands.type == 'HDG']
     pd.options.mode.chained_assignment = None # surprsses the copy warning from following statement:
@@ -111,7 +117,10 @@ def custom_round(x, base=20):
     return int(base * round(float(x) / base))
 
 
-def plot_traffic(all_dataframes):
+def plot_traffic(all_dataframes, settings):
+    # plot settings
+    sns.set()
+    sns.set_context("notebook")
 
     df_traffic = all_dataframes['traffic'].reset_index()
 
@@ -193,18 +202,12 @@ def plot_traffic(all_dataframes):
 if __name__ == "__main__":
     settings = config.Settings
 
-    # plot settings
-    sns.set()
-    sns.set_context("notebook")  # smaller: paper
+    try:
+        all_data = pickle.load(open(settings.data_folder + settings.processed_data_filename, "rb"))
+        print('Data loaded from Pickle')
+    except FileNotFoundError:
+        print('Pickle all_dataframes.p not found. Please run process_data.py')
 
-    all_data = pickle.load(open(settings.data_folder + 'all_dataframes.p', "rb"))
-
-    # try:
-    #     # participants = pickle.load(open(settings.data_folder + settings.processed_data_filename, "rb"))
-    #
-    #     print('Data loaded from Pickle')
-    # except FileNotFoundError:
-    #     print('Pickle all_dataframes.p not found. Please run process_data.py')
-
-    plot_commands(all_data)
-    # plot_traffic(all_data)
+    print('Start plotting')
+    plot_commands(all_data, settings)
+    # plot_traffic(all_data, settings)

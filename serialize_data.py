@@ -16,9 +16,8 @@ def serialize_data():
     # Obtain list of xml files and remove .xml extension
     files = os.listdir(settings.data_folder)
     xml_files = [file[:-4] for file in files if '.xml' in file]
-    xml_files.sort()
     print('Number of runs:', len(xml_files))
-    # xml_files = sorted(xml_files, key=lambda x: int(x[-1]))
+    xml_files = sorted(xml_files, key=lambda x: int(x[-1]))  # sorts the list based on run number !important
     xml_files = [file+'.xml' for file in xml_files]
     for i_file, file in enumerate(xml_files):
         i_run = int(file[-5])

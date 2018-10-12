@@ -3,13 +3,10 @@ import pickle
 from config import Settings
 
 
-def rotate_ssd(ssd_image, command):
+def rotate_ssd(ssd_image, command, df_traffic):
     settings = Settings
-    all_dataframes = pickle.load(open(settings.data_folder + settings.processed_data_filename, "rb"))
 
-    df_traffic = all_dataframes['traffic']
     df_traffic_run = df_traffic.loc[(command.participant_id, command.run_id)]
-
     traffic_timestamps = df_traffic_run.timestamp.unique()
 
     command.timestamp_traffic = command.timestamp - 1  # command always taken at previous state

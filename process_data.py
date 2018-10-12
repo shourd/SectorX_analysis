@@ -342,6 +342,9 @@ def determine_command_type(command):
     elif command.DCT is True:  # direct to exit way-point
         command.type = 'DCT'
         command.value = None
+    elif command.TOC is True:  # transfer of control
+        command.type = 'TOC'
+        command.value = None
     else:
         command.type = 'N/A'
         command.value = None
@@ -387,7 +390,7 @@ if __name__ == "__main__":
 
     # analyse_conflicts(participants)
     print('Start plotting')
-    plot_commands(all_data, settings)
+    # plot_commands(all_data, settings)
     # plot_traffic(all_data, settings)
 
 

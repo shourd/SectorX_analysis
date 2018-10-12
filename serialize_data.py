@@ -44,7 +44,7 @@ def serialize_data():
         # Read the commands from the message file and skip the header
         msg_file = open(settings.data_folder + file, "r", newline="")
         subject = re.findall("subject:(.*),", msg_file.readline())[0]
-        command_lines = msg_file.readlines()[1:]
+        command_lines = msg_file.readlines()
         msg_file.close()
 
         # Deserialize MSG into objects

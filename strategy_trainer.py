@@ -1,6 +1,5 @@
 import numpy as np
 from config import Settings
-import pandas as pd
 from ssd_loader import ssd_loader
 import keras
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
@@ -11,11 +10,10 @@ from keras.callbacks import ModelCheckpoint
 from keras.layers.core import Activation
 from keras import backend as K
 from keras.applications import VGG16
-from os import environ, path, makedirs
+from os import path, makedirs
 import pickle
 import time
 import matplotlib.pyplot as plt
-from PIL import Image
 
 
 def ssd_trainer(all_data):
@@ -112,7 +110,11 @@ def prepare_training_set(ssd_data, command_data):
     command_data = command_data[command_data.ssd_id != 'N/A']
     command_data.reset_index(inplace=True)
     command_data = command_data.sort_values(by=['ssd_id'])
-    print(command_data.to_string())
+    # print(command_data.to_string())
+
+    print(len(list(command_data.ssd_id.unique())))
+    print(command_data.ssd_id.max())
+
       # create an ID for all actions
     # command_data = command_data[command_data.PARTICIPANT_ID in participant_ids]
 
@@ -204,8 +206,8 @@ def create_model(settings):
 
     return model, convout
 
-def create_pretrained_model(settings):
 
+def create_pretrained_model(settings):
 
     # Load the VGG model
     vgg_conv = VGG16(weights='imagenet', include_top=False, input_shape=settings.ssd_shape)
@@ -246,6 +248,7 @@ def create_pretrained_model(settings):
                   metrics=['accuracy'])
 
     return model, convout
+
 
 def visualize_layer(x_train, model, layer):
     # choose any image to want by specifying the index

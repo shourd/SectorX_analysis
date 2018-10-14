@@ -7,7 +7,7 @@ class Settings:
     ssd_folder = 'data/all_ssd'
     output_dir = 'output'
     serialized_data_filename = "serialized_data.p"
-    processed_data_filename = 'all_dataframes_2.p'
+    processed_data_filename = 'all_dataframes_3.p'
 
     # serialize and process settings
     caution_time = 120          # orange conflict

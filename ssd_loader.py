@@ -17,7 +17,8 @@ class Command:
     value = 0
 
 
-def ssd_loader(dataframes, settings):
+def ssd_loader(settings):
+    dataframes = pickle.load(open(settings.data_folder + settings.processed_data_filename, "rb"))
     df_traffic = dataframes['traffic']
     df_commands = dataframes['commands']
     df_commands_edit = df_commands.reset_index()
@@ -45,7 +46,7 @@ def ssd_loader(dataframes, settings):
             (df_commands_edit.timestamp == command.timestamp), 'ssd_id'] = ssd_id
 
         if ssd_id not in list(df_commands_edit.ssd_id):
-            print('nee', filename)
+            print('ERROR:', filename)
 
 
         """ IMAGE PART """
@@ -136,9 +137,4 @@ def edit_ssd(ssd, command, df_traffic, settings):
 
 if __name__ == "__main__":
     settings = Settings()
-    # all_dataframes = pickle.load(open(settings.data_folder + 'all_dataframes.p', "rb"))
-    # print(all_dataframes['commands'].to_string())
-
-    all_dataframes = pickle.load(open(settings.data_folder + settings.processed_data_filename, "rb"))
-    # print(all_dataframes['commands'].to_string())
-    ssd_loader(all_dataframes, settings)
+    ssd_loader(settings)

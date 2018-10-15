@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from config import Settings
+from config import settings
 from PIL import Image
 import pandas as pd
 from rotate_ssd import rotate_ssd
@@ -17,8 +17,10 @@ class Command:
     value = 0
 
 
-def ssd_loader(settings):
-    dataframes = pickle.load(open(settings.data_folder + settings.processed_data_filename, "rb"))
+def ssd_loader(dataframes=None):
+    if dataframes is None:
+        dataframes = pickle.load(open(settings.data_folder + 'all_dataframes_2.p', "rb"))
+
     df_traffic = dataframes['traffic']
     df_commands = dataframes['commands']
     df_commands_edit = df_commands.reset_index()
@@ -69,7 +71,7 @@ def ssd_loader(settings):
     ssd_stack /= 255
 
     # dimensions: (sample_num, height, width px, number of color bands /channels)
-    ssd_stack = ssd_stack.reshape(ssd_stack.shape[0], settings.ssd_shape[1], settings.ssd_shape[0], settings.ssd_shape[2])
+    ssd_stack = ssd_stack.reshape(ssd_stack.shape[0], settings.ssd_shape[0], settings.ssd_shape[1], settings.ssd_shape[2])
 
     """ SAVING AND RETURNING """
     df_commands = df_commands_edit.set_index(['participant_id', 'run_id', 'i_command'])

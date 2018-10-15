@@ -3,8 +3,7 @@ import xml.etree.ElementTree as ET
 import pickle
 import re
 from toolset.data_objects import Participant, Run, Run, Command
-from config import Settings
-
+from config import settings
 
 def serialize_data():
     """ Convert XML files to python Classes/objects """
@@ -60,10 +59,10 @@ def serialize_data():
     pickle_file.close()
     print("Saved serialized data to " + settings.serialized_data_filename)
 
+    return participant_list
+
 
 if __name__ == "__main__":
-    settings = Settings
-    settings.data_folder = settings.data_folder
     serialize_data()
     print('Finished')
 

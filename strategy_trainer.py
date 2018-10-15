@@ -1,5 +1,5 @@
+from config import settings
 import numpy as np
-from config import Settings
 from ssd_loader import ssd_loader
 import keras
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
@@ -14,20 +14,21 @@ from os import path, makedirs
 import pickle
 import time
 import matplotlib.pyplot as plt
+from PIL import Image
+import confusion_matrix_script
 
 
 def ssd_trainer(all_data):
-    iteration_name = 'iteration_name'
 
     """ PREPARE TRAINING SET """
     x_data, y_data = prepare_training_set(all_data['ssd_images'], all_data['commands'])
 
     """ SPLIT TRAIN AND VALIDATION DATA """
-    x_train, y_train, x_val, y_val = split_data(x_data, y_data, settings)
+    x_train, y_train, x_val, y_val = split_data(x_data, y_data)
 
     """ CREATE MODEL """
     # model, layer = create_model(settings)
-    model, layer = create_pretrained_model(settings)
+    model, layer = create_model(settings.iteration_name)
 
     """ CALLBACKS """
 
@@ -40,18 +41,19 @@ def ssd_trainer(all_data):
             self.acc.append(logs.get('acc'))
 
     history = AccuracyHistory()
-    tensor_board_callback = keras.callbacks.TensorBoard(log_dir='./logs', histogram_freq=1, batch_size=32,
-                                                        write_graph=True, write_grads=True,
+    log_dir = './logs/' + settings.iteration_name
+    tensor_board_callback = keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, batch_size=32,
+                                                        write_graph=False, write_grads=True,
                                                         write_images=True, embeddings_freq=0,
                                                         embeddings_layer_names=None,
                                                         embeddings_metadata=None, embeddings_data=None)
 
     # CHECKPOINTS
-    filepath = settings.output_dir + '/' + iteration_name + '.hdf5'
-    checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+    weights_filepath = settings.output_dir + '/' + settings.iteration_name + '.hdf5'
+    checkpoint = ModelCheckpoint(weights_filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 
     if settings.save_model:
-        callbacks_list = [checkpoint, history]
+        callbacks_list = [checkpoint, history, tensor_board_callback]
     else:
         callbacks_list = [history, tensor_board_callback]
 
@@ -67,7 +69,7 @@ def ssd_trainer(all_data):
     train_datagen = ImageDataGenerator(
         rotation_range=settings.rotation_range,
         fill_mode='constant',
-        cval=1,  # fill with white pixels [0;1]
+        cval=0,  # fill with black pixels [0;1]
     )
 
     train_generator = train_datagen.flow(
@@ -91,66 +93,109 @@ def ssd_trainer(all_data):
         callbacks=callbacks_list)
 
     score = model.evaluate(x_val, y_val, verbose=0)
-    test_loss = round(score[0], 3)
+    # test_loss = round(score[0], 3)
     test_accuracy = round(score[1], 3)
     train_time = int(time.time() - start_time)
 
     print('Test accuracy:', test_accuracy)
+    print('Train time: {} min'.format(round(train_time/60),1))
 
     visualize_layer(x_train, model, layer)
+
+    # y_pred = model.predict(x_val)
+    """ Confusion Matrix """
+    class_names = ['In front', 'Behind']
+    y_pred_classes = model.predict_classes(x_val)
+    y_val = np.argmax(y_val, axis=1)
+    confusion_matrix_script.plot_confusion_matrix(y_val, y_pred_classes, classes=class_names, normalize=False)
 
 
 def prepare_training_set(ssd_data, command_data):
     """ FILTER COMMANDS """
-    participant_ids = ['P1']  # ['P7']
-    run_ids = ['R1']#'all'
-    command_types = ['SPD', 'HDG']
-    settings.num_classes = len(command_types)
+    participant_ids = 'all' #['P5', 'P7']  # ['P7']
+    run_ids = 'all'  #['R1'] #'all'
+    command_types = ['HDG']
+    settings.num_classes = 2  #len(command_types)
 
     command_data = command_data[command_data.ssd_id != 'N/A']
-    command_data.reset_index(inplace=True)
-    command_data = command_data.sort_values(by=['ssd_id'])
-    # print(command_data.to_string())
+    command_data = command_data.reset_index().set_index('ssd_id').sort_index()
 
-    print(len(list(command_data.ssd_id.unique())))
-    print(command_data.ssd_id.max())
+    # lijst = list(command_data.index)
+    # seen = set()
+    # for x in lijst:
+    #     if x in seen:
+    #         print('dubbel:', x)
+    #     seen.add(x)
 
-      # create an ID for all actions
-    # command_data = command_data[command_data.PARTICIPANT_ID in participant_ids]
+    # ssd = 100
+    # show_ssd(ssd_id=ssd, ssd_stack=ssd_data)
+    # print(command_data.loc[ssd])
 
     if participant_ids is not 'all':
-        command_data = command_data[command_data.PARTICIPANT_ID.isin(participant_ids)]
+        command_data = command_data[command_data.participant_id.isin(participant_ids)]
     if run_ids is not 'all':
-        command_data = command_data[command_data.RUN_ID.isin(run_ids)]
+        command_data = command_data[command_data.run_id.isin(run_ids)]
     if command_types is not 'all':
-        command_data = command_data[command_data.TYPE.isin(command_types)]
-
-
-    print(command_data.to_string())
+        command_data = command_data[command_data.type.isin(command_types)]
 
     # filter ssds based on remaining actions
     actions_ids = command_data.index.unique()
     x_data = ssd_data[actions_ids, :, :, :]
 
-    print('Speed commands:', len(command_data[command_data.TYPE == 'SPD']))
+    target_list = make_categorical_list(command_data)
 
-    res_list = []
-    for command in list(command_data.TYPE):
-        if command == 'HDG': res = 0
-        elif command == 'SPD': res = 1
-        elif command == 'DCT': res = 2
-        elif command == 'TOC': res = 3
-        else:
-            print('ERROR: Command type not recognized')
-            break
-        res_list.append(res)
-
-    y_data = keras.utils.to_categorical(res_list, settings.num_classes)
+    y_data = keras.utils.to_categorical(target_list, settings.num_classes)
 
     return x_data, y_data
 
 
-def split_data(x_data, y_data, settings):
+def make_categorical_list(command_data):
+    target_list = []
+    # for command in list(command_data.TYPE):
+    #     if command == 'HDG': res = 0
+    #     elif command == 'SPD': res = 1
+    #     elif command == 'DCT': res = 2
+    #     elif command == 'TOC': res = 3
+    #     else:
+    #         print('ERROR: Command type not recognized')
+    #         break
+    #     target_list.append(res)
+
+    # """ DIRECTION """
+    # for command in list(command_data.direction):
+    #     if command == 'left': res = 0
+    #     elif command == 'right': res = 1
+    #     else:
+    #         print('ERROR: Command type not recognized')
+    #         break
+    #     target_list.append(res)
+    #
+    # number_left = target_list.count(0)
+    # number_right = target_list.count(1)
+    # total = number_left + number_right
+    # print('Left: {} ({}%)'.format(number_left, round(100*number_left/total),0))
+    # print('Right: {} ({}%)'.format(number_right, round(100*number_right/total),0))
+
+    """ GEOMETRY """
+    for command in list(command_data.preference):
+        if command == 'infront':
+            res = 0
+        elif command == 'behind':
+            res = 1
+        else:
+            print('ERROR: Command type not recognized')
+            break
+        target_list.append(res)
+
+    number_infront = target_list.count(0)
+    number_behind = target_list.count(1)
+    total = number_infront + number_behind
+    print('In front: {} ({}%)'.format(number_infront, round(100 * number_infront / total), 0))
+    print('Behind: {} ({}%)'.format(number_behind, round(100 * number_behind / total), 0))
+
+    return target_list
+
+def split_data(x_data, y_data):
     train_length = int(settings.train_val_ratio * len(x_data))
     x_train = x_data[0:train_length, :, :, :]
     x_val = x_data[train_length:, :, :, :]
@@ -164,12 +209,10 @@ def split_data(x_data, y_data, settings):
     return x_train, y_train, x_val, y_val
 
 
-def create_model(settings):
+def create_model(iteration_name):
     """ CREATING THE NEURAL NETWORK """
     model = Sequential()
-    input_shape = settings.ssd_shape
-    # input_shape = (settings.ssd_import_size[0], settings.ssd_import_size[1], 3)
-    model.add(keras.layers.InputLayer(input_shape=input_shape))
+    model.add(keras.layers.InputLayer(input_shape=settings.ssd_shape))
 
     # BASELINE ARCHITECTURE
     model.add(Conv2D(32, kernel_size=(2, 2), strides=(1, 1)))
@@ -179,7 +222,7 @@ def create_model(settings):
     # model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Conv2D(64, kernel_size=(5, 5), strides=(2, 2), activation='relu'))
     # model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(32, kernel_size=(10, 10), strides=(2, 2), activation='relu'))
+    model.add(Conv2D(32, kernel_size=(5, 5), strides=(2, 2), activation='relu'))
     # model.add(MaxPooling2D(pool_size=(2, 2)))
     # model.add(Conv2D(64, kernel_size=(5, 5), strides=(1, 1)))
     # convout2 = Activation('relu')
@@ -188,6 +231,8 @@ def create_model(settings):
     # Flattening and FC
     model.add(Flatten())
     model.add(Dense(1024, activation='relu'))
+    if settings.dropout_rate != 0:
+        model.add(Dropout(settings.dropout_rate))
     model.add(Dense(settings.num_classes, activation='softmax'))
     model.summary()
 
@@ -196,22 +241,27 @@ def create_model(settings):
         print('Output directory created')
         makedirs(settings.output_dir)
 
-    plot_model(model, to_file='structure.png', show_shapes=True, show_layer_names=False)
+    plot_model(model, to_file='figures/structure_{}.png'.format(iteration_name), show_shapes=True, show_layer_names=False)
 
-    model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(),
+    model.compile(loss=keras.losses.categorical_crossentropy,
+                  optimizer=keras.optimizers.Adam(),
                   metrics=['accuracy'])
 
     # sgd = keras.optimizers.SGD(lr=0.001)
     # model.compile(loss="categorical_crossentropy", optimizer=sgd, metrics=['accuracy'])
 
+    if settings.load_weights is not False:
+        weights_filepath = settings.output_dir + '/' + 'without_dropout' + '.hdf5'
+        model.load_weights(weights_filepath, by_name=False)
+
+
     return model, convout
 
 
-def create_pretrained_model(settings):
+def create_pretrained_model():
 
     # Load the VGG model
     vgg_conv = VGG16(weights='imagenet', include_top=False, input_shape=settings.ssd_shape)
-    vgg_conv.summary()
 
     # Freeze the layers except the last 4 layers
     for layer in vgg_conv.layers[:-4]:
@@ -268,31 +318,42 @@ def visualize_layer(x_train, model, layer):
     convolutions = convout1_f(img_to_visualize)
     convolutions = np.squeeze(convolutions)
 
-    print('Shape of conv:', convolutions.shape)
-
     n = convolutions.shape[2]
     n = int(np.ceil(np.sqrt(n)))
 
-    convolutions = convolutions.transpose((1, 0, 2))
     # Visualization of each filter of the layer
     fig = plt.figure(figsize=(12, 8))
     for i in range(convolutions.shape[2]):
         ax = fig.add_subplot(n, n, i + 1)
         ax.imshow(convolutions[:,:,i], cmap='gray')
-    plt.show()
+    plt.savefig('figures/filters.png')
+    plt.close()
+    # plt.show()
 
-    fig, ax = plt.subplots()
-    ax.imshow(convolutions[:,:,1], cmap='gray')
-    plt.show()
+    # fig, ax = plt.subplots()
+    # ax.imshow(convolutions[:,:,1], cmap='gray')
+    # plt.show()
+
+
+def show_ssd(ssd_id, ssd_stack):
+    ssd = ssd_stack[ssd_id, :, :, :]
+    ssd *= 255
+    ssd = ssd.astype('uint8')
+    ssd = Image.fromarray(ssd)
+    ssd.show()
 
 
 if __name__ == "__main__":
-    settings = Settings()
     try:
         all_data = pickle.load(open(settings.data_folder + 'all_dataframes_3.p', "rb"))
         print('Data loaded from pickle')
     except FileNotFoundError:
         print('Start importing data from image files')
-        all_data = ssd_loader(settings)
+        all_data = ssd_loader()
 
     ssd_trainer(all_data)
+
+    # TODO: Pretrain with all SSDs, then transfer learn to more specific cases
+    # TODO: Incorporate F1 score
+    # TODO: loop over all participants and compare accuracy.
+    # TODO: color channels

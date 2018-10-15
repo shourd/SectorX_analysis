@@ -1,16 +1,15 @@
 from toolset.get_relevant_aircraft import get_relevant_aircraft
 import pickle
 from toolset.conflict import get_conflicts
-import config
+from config import settings
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 from os import mkdir
-from plot_data import plot_traffic, plot_commands
 
 
-def create_dataframes():
+def create_dataframes(participant_list=None):
     """
     :return: Three dataframes:
     all_dataframes.traffic
@@ -18,8 +17,9 @@ def create_dataframes():
     all_dataframes.conflicts
     IMPORT DATA AND CONVERT TO PANDAS DATAFRAMES
     """
+    if participant_list is None:
+        participant_list = load_from_pickle()
 
-    participant_list = load_from_pickle()
     sector_points = obtain_sector_points(participant_list)
 
     experiment_setup = initialize_experiment_setup()
@@ -150,7 +150,7 @@ def create_dataframes():
 
     # pickle.dump(participants, open(settings.data_folder + settings.processed_data_filename, "wb"))
     pickle.dump(all_dataframes, open(settings.data_folder + 'all_dataframes.p', "wb"))
-    print('Data saved to pickle')
+    print('Processed data saved to pickle')
 
     return all_dataframes
 
@@ -204,8 +204,8 @@ def analyse_commands(all_dataframes):
     all_dataframes['commands'] = df_commands
     all_dataframes['traffic'] = df_traffic
 
-    pickle.dump(all_dataframes, open(settings.data_folder + settings.processed_data_filename, "wb"))
-    print('Data saved to pickle')
+    pickle.dump(all_dataframes, open(settings.data_folder + 'all_dataframes_2.p', "wb"))
+    print('Command data saved to pickle')
 
     return all_dataframes
 
@@ -374,12 +374,10 @@ def load_from_pickle():
 
 
 if __name__ == "__main__":
-    settings = config.Settings
-    # settings.data_folder = settings.data_folder + '/all/'
 
     try:
         # participants = pickle.load(open(settings.data_folder + settings.processed_data_filename, "rb"))
-        all_data = pickle.load(open(settings.data_folder + settings.processed_data_filename, "rb"))
+        all_data = pickle.load(open(settings.data_folder + 'all_dataframes_1.p', "rb"))
         print('Data loaded from Pickle')
     except FileNotFoundError:
         print('Start loading data.')
@@ -389,8 +387,5 @@ if __name__ == "__main__":
         print('Commands analyzed and saved to Pickle')
 
     # analyse_conflicts(participants)
-    print('Start plotting')
-    # plot_commands(all_data, settings)
-    # plot_traffic(all_data, settings)
 
 

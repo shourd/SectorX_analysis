@@ -33,11 +33,20 @@ def main():
 
     print('Start training the neural network')
 
-    settings.iteration_name = 'test1'
-    ssd_trainer(all_data)
+    target_types = ['direction','geometry']
+    participants = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8']
+    settings.load_weights = 'with_preloading'
 
-    settings.iteration_name = 'test2'
-    ssd_trainer(all_data)
+    for target_type in target_types:
+        settings.target_type = target_type
+
+        for participant in participants:
+            print('------------------------------------------------')
+            print('-- Start training:', participant)
+            print('------------------------------------------------')
+            settings.iteration_name = '{}_{}_pretrained'.format(target_type, participant)
+            participant_ids = [participant]
+            ssd_trainer(all_data, participant_ids)
 
 
 if __name__ == "__main__":

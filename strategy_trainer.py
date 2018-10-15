@@ -15,13 +15,14 @@ import pickle
 import time
 import matplotlib.pyplot as plt
 from PIL import Image
-import confusion_matrix_script
+from confusion_matrix_script import plot_confusion_matrix
 
 
-def ssd_trainer(all_data):
+def ssd_trainer(all_data, participant_ids):
+    K.clear_session()
 
     """ PREPARE TRAINING SET """
-    x_data, y_data = prepare_training_set(all_data['ssd_images'], all_data['commands'])
+    x_data, y_data = prepare_training_set(all_data['ssd_images'], all_data['commands'], participant_ids)
 
     """ SPLIT TRAIN AND VALIDATION DATA """
     x_train, y_train, x_val, y_val = split_data(x_data, y_data)
@@ -44,7 +45,7 @@ def ssd_trainer(all_data):
     log_dir = './logs/' + settings.iteration_name
     tensor_board_callback = keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, batch_size=32,
                                                         write_graph=False, write_grads=True,
-                                                        write_images=True, embeddings_freq=0,
+                                                        write_images=False, embeddings_freq=0,
                                                         embeddings_layer_names=None,
                                                         embeddings_metadata=None, embeddings_data=None)
 
@@ -53,6 +54,7 @@ def ssd_trainer(all_data):
     checkpoint = ModelCheckpoint(weights_filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 
     if settings.save_model:
+        # callbacks_list = [checkpoint, history, tensor_board_callback]
         callbacks_list = [checkpoint, history, tensor_board_callback]
     else:
         callbacks_list = [history, tensor_board_callback]
@@ -100,32 +102,22 @@ def ssd_trainer(all_data):
     print('Test accuracy:', test_accuracy)
     print('Train time: {} min'.format(round(train_time/60),1))
 
-    visualize_layer(x_train, model, layer)
+    # visualize_layer(x_train, model, layer)
 
-    # y_pred = model.predict(x_val)
     """ Confusion Matrix """
-    class_names = ['In front', 'Behind']
     y_pred_classes = model.predict_classes(x_val)
     y_val = np.argmax(y_val, axis=1)
-    confusion_matrix_script.plot_confusion_matrix(y_val, y_pred_classes, classes=class_names, normalize=False)
+    plot_confusion_matrix(y_val, y_pred_classes, settings.iteration_name, classes=settings.class_names, normalize=False)
 
 
-def prepare_training_set(ssd_data, command_data):
+def prepare_training_set(ssd_data, command_data, participant_ids):
     """ FILTER COMMANDS """
-    participant_ids = 'all' #['P5', 'P7']  # ['P7']
     run_ids = 'all'  #['R1'] #'all'
     command_types = ['HDG']
     settings.num_classes = 2  #len(command_types)
 
     command_data = command_data[command_data.ssd_id != 'N/A']
     command_data = command_data.reset_index().set_index('ssd_id').sort_index()
-
-    # lijst = list(command_data.index)
-    # seen = set()
-    # for x in lijst:
-    #     if x in seen:
-    #         print('dubbel:', x)
-    #     seen.add(x)
 
     # ssd = 100
     # show_ssd(ssd_id=ssd, ssd_stack=ssd_data)
@@ -142,56 +134,68 @@ def prepare_training_set(ssd_data, command_data):
     actions_ids = command_data.index.unique()
     x_data = ssd_data[actions_ids, :, :, :]
 
-    target_list = make_categorical_list(command_data)
+    target_list = make_categorical_list(command_data, settings.target_type)
 
     y_data = keras.utils.to_categorical(target_list, settings.num_classes)
 
     return x_data, y_data
 
 
-def make_categorical_list(command_data):
+def make_categorical_list(command_data, target_type):
+    """
+    :param command_data:
+    :param target_type: type can be 1. command type 2. command direction (left/right) or 3. command geometry
+    :return: target_list
+    """
     target_list = []
-    # for command in list(command_data.TYPE):
-    #     if command == 'HDG': res = 0
-    #     elif command == 'SPD': res = 1
-    #     elif command == 'DCT': res = 2
-    #     elif command == 'TOC': res = 3
-    #     else:
-    #         print('ERROR: Command type not recognized')
-    #         break
-    #     target_list.append(res)
 
-    # """ DIRECTION """
-    # for command in list(command_data.direction):
-    #     if command == 'left': res = 0
-    #     elif command == 'right': res = 1
-    #     else:
-    #         print('ERROR: Command type not recognized')
-    #         break
-    #     target_list.append(res)
-    #
-    # number_left = target_list.count(0)
-    # number_right = target_list.count(1)
-    # total = number_left + number_right
-    # print('Left: {} ({}%)'.format(number_left, round(100*number_left/total),0))
-    # print('Right: {} ({}%)'.format(number_right, round(100*number_right/total),0))
+    """ COMMAND TYPE """
+    if target_type is 'command_type':
+        for command in list(command_data.TYPE):
+            if command == 'HDG': res = 0
+            elif command == 'SPD': res = 1
+            elif command == 'DCT': res = 2
+            elif command == 'TOC': res = 3
+            else:
+                print('ERROR: Command target_type not recognized')
+                break
+            target_list.append(res)
 
-    """ GEOMETRY """
-    for command in list(command_data.preference):
-        if command == 'infront':
-            res = 0
-        elif command == 'behind':
-            res = 1
-        else:
-            print('ERROR: Command type not recognized')
-            break
-        target_list.append(res)
+    elif target_type is 'direction':
+        settings.class_names = ['Left', 'Right']
+        for command in list(command_data.direction):
+            if command == 'left': res = 0
+            elif command == 'right': res = 1
+            else:
+                print('ERROR: Command target_type not recognized')
+                break
+            target_list.append(res)
 
-    number_infront = target_list.count(0)
-    number_behind = target_list.count(1)
-    total = number_infront + number_behind
-    print('In front: {} ({}%)'.format(number_infront, round(100 * number_infront / total), 0))
-    print('Behind: {} ({}%)'.format(number_behind, round(100 * number_behind / total), 0))
+        number_left = target_list.count(0)
+        number_right = target_list.count(1)
+        total = number_left + number_right
+        if total == 0:
+            print('ERROR: No data was selected!')
+        print('Left: {} ({}%)'.format(number_left, round(100*number_left/total),0))
+        print('Right: {} ({}%)'.format(number_right, round(100*number_right/total),0))
+
+    elif target_type is 'geometry':
+        settings.class_names = ['In front', 'Behind']
+        for command in list(command_data.preference):
+            if command == 'infront':
+                res = 0
+            elif command == 'behind':
+                res = 1
+            else:
+                print('ERROR: Command target_type not recognized')
+                break
+            target_list.append(res)
+
+        number_infront = target_list.count(0)
+        number_behind = target_list.count(1)
+        total = number_infront + number_behind
+        print('In front: {} ({}%)'.format(number_infront, round(100 * number_infront / total), 0))
+        print('Behind: {} ({}%)'.format(number_behind, round(100 * number_behind / total), 0))
 
     return target_list
 
@@ -353,7 +357,6 @@ if __name__ == "__main__":
 
     ssd_trainer(all_data)
 
-    # TODO: Pretrain with all SSDs, then transfer learn to more specific cases
     # TODO: Incorporate F1 score
-    # TODO: loop over all participants and compare accuracy.
     # TODO: color channels
+    # TODO: try again with less dropout

@@ -6,7 +6,9 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 
 
-def plot_confusion_matrix(y_test, y_pred, classes,
+def plot_confusion_matrix(y_test, y_pred,
+                          iteration_name,
+                          classes,
                           normalize=False,
                           title='Confusion matrix',
                           cmap=plt.cm.Blues):
@@ -45,7 +47,7 @@ def plot_confusion_matrix(y_test, y_pred, classes,
     plt.xlabel('Predicted label')
     plt.tight_layout()
 
-    plt.savefig('figures/confusion.png')
+    plt.savefig('figures/confusion_{}.png'.format(iteration_name))
     plt.close()
 
 

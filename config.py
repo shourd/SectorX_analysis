@@ -28,19 +28,21 @@ class Settings:
     ignore_PRV = True
 
     # CNN TRAIN SETTINGS
+    target_type = 'direction'
+    class_names = ['Class I', 'Class II']
     # learning_rate = 0.01
     train_val_ratio = 0.8
     # model_name = 'model'
-    epochs = 1
-    batch_size = 128  # 128
-    steps_per_epoch = 1  #888 / 128
+    epochs = 25
+    batch_size = 64  # 128
+    steps_per_epoch = 5  #888 / 128
     rotation_range = 0  # the maximum degree of random rotation for data augmentation
     num_classes = 3  # amount of resolution classes (2, 4, 6, or 12)
     randomize_fraction = 0  # Randomize percentage of samples to simulate human randomness
     save_model = True  # save model weights to disk
     load_weights = False
     reload_data = False
-    dropout_rate = 0.2
+    dropout_rate = 0.5
     iteration_name = 'iteration_name'
 
 

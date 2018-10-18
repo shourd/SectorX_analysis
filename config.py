@@ -4,7 +4,7 @@ class Settings:
     # DATA LOCATIONS
     data_folder = 'data/all/'
     ssd_folder = 'data/all_ssd'
-    output_dir = 'weights'
+    output_dir = 'output'
     serialized_data_filename = "serialized_data.p"
 
     # SERIALIZE AND PROCESS SETTINGS
@@ -18,14 +18,17 @@ class Settings:
     figsize1 = (5, 5)
     figsize2 = (10, 5)
     figsize3 = (15, 5)
+    figsize4 = (20, 5)
 
     # SSD IMPORT SETTINGS
     convert_to_greyscale = False
+    convert_black_to_white = True
     rotate_upwards = True  # rotates the speedvector towards the north
     crop_top = True  # only possible when rotated upwards
-    save_png_files = False
+    save_png_files = True
     ssd_import_size = (128, 128)
     ignore_PRV = True
+
 
     # CNN TRAIN SETTINGS
     target_type = 'direction'
@@ -34,15 +37,17 @@ class Settings:
     train_val_ratio = 0.8
     # model_name = 'model'
     epochs = 25
-    batch_size = 64  # 128
-    steps_per_epoch = 5  #888 / 128
+    batch_size = 128  # 128
+    steps_per_epoch = 8  #888 / 128
     rotation_range = 0  # the maximum degree of random rotation for data augmentation
-    num_classes = 3  # amount of resolution classes (2, 4, 6, or 12)
+    num_classes = 2  # amount of resolution classes (2, 4, 6, or 12)
     randomize_fraction = 0  # Randomize percentage of samples to simulate human randomness
-    save_model = True  # save model weights to disk
+    save_model = False  # save model weights to disk
     load_weights = False
+    freeze_layers = False
     reload_data = False
-    dropout_rate = 0.5
+    csv_logger = False
+    dropout_rate = 0.2
     iteration_name = 'iteration_name'
 
 

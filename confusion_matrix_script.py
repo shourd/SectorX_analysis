@@ -1,14 +1,15 @@
-""" Taken from: http://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html """
+""" Taken from: http://scikit-learn.org/stable/auto_examples/model_selection/get_confusion_metrics.html """
+from config import settings
 import itertools
 import numpy as np
 import matplotlib.pyplot as plt
 
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, classification_report, matthews_corrcoef, f1_score
 
 
-def plot_confusion_matrix(y_test, y_pred,
-                          iteration_name,
-                          classes,
+def get_confusion_metrics(y_test, y_pred,
+                          iteration_name=settings.iteration_name,
+                          classes=settings.class_names,
                           normalize=False,
                           title='Confusion matrix',
                           cmap=plt.cm.Blues):
@@ -18,7 +19,11 @@ def plot_confusion_matrix(y_test, y_pred,
     """
 
     # Compute confusion matrix
+
+
     cm = confusion_matrix(y_test, y_pred)
+    report = classification_report(y_test, y_pred, [0, 1], settings.class_names)
+
 
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
@@ -27,6 +32,29 @@ def plot_confusion_matrix(y_test, y_pred,
         print('Confusion matrix, without normalization')
     np.set_printoptions(precision=2)
     print(cm)
+    # print(report)
+
+    """ Calculate Informedness """
+
+    if len(cm) > 1:
+        TP = cm[0,0]
+        TN = cm[1,1]
+        FP = cm[0,1]
+        FN = cm[1,0]
+
+        if TP != 0:
+            sensitivity = TP / (TP + FN)
+        else:
+            sensitivity = 0
+
+        specificity = TN / (TN + FP)
+        informedness = round(sensitivity + specificity - 1, 2)
+    else:
+        informedness = 'NaN'
+
+    F1_score = round(f1_score(y_test, y_pred), 2)
+    MCC = round(matthews_corrcoef(y_test, y_pred), 2)
+    # http://scikit-learn.org/stable/modules/generated/sklearn.metrics.matthews_corrcoef.html --> MCC
 
     plt.figure()
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
@@ -50,6 +78,7 @@ def plot_confusion_matrix(y_test, y_pred,
     plt.savefig('figures/confusion_{}.png'.format(iteration_name))
     plt.close()
 
+    return informedness, F1_score, MCC
 
 
 

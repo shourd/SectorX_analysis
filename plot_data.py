@@ -1,3 +1,4 @@
+from config import settings
 import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -6,7 +7,7 @@ import pickle
 import os
 
 
-def plot_commands(all_dataframes, settings):
+def plot_commands(all_dataframes):
     # TODO: EFFECT SSD ON CONSISTENCY
     # plot settings
     sns.set()
@@ -17,6 +18,7 @@ def plot_commands(all_dataframes, settings):
     # df_traffic = all_dataframes['traffic'].reset_index()
 
     df_commands = df_commands[df_commands.type != 'N/A']
+    df_commands = df_commands[df_commands.type != 'TOC']
 
     # sns.set_palette("GnBu_d")
 
@@ -117,7 +119,7 @@ def custom_round(x, base=20):
     return int(base * round(float(x) / base))
 
 
-def plot_traffic(all_dataframes, settings):
+def plot_traffic(all_dataframes):
     # plot settings
     sns.set()
     sns.set_context("notebook")
@@ -203,11 +205,11 @@ if __name__ == "__main__":
     settings = config.Settings
 
     try:
-        all_data = pickle.load(open(settings.data_folder + settings.processed_data_filename, "rb"))
+        all_data = pickle.load(open(settings.data_folder + 'all_dataframes_3.p', "rb"))
         print('Data loaded from Pickle')
     except FileNotFoundError:
         print('Pickle all_dataframes.p not found. Please run process_data.py')
 
     print('Start plotting')
-    plot_commands(all_data, settings)
-    # plot_traffic(all_data, settings)
+    plot_commands(all_data)
+    # plot_traffic(all_data)

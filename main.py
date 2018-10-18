@@ -5,6 +5,7 @@ from plot_data import plot_commands, plot_traffic
 from ssd_loader import ssd_loader
 from strategy_trainer import ssd_trainer
 import pickle
+import pandas as pd
 
 def main():
 
@@ -21,32 +22,42 @@ def main():
         print('Start processing commands')
         all_dataframes = analyse_commands(all_dataframes)
 
-        # print('Start processing conflicts')
-        # all_dataframes = analyse_conflicts(participant_list)
-
-        print('Start plotting')
-        plot_commands()
-        # plot_traffic()
+        print('Start processing conflicts')
+        all_dataframes = analyse_conflicts(participant_list)
 
         print('Start loading SSDs')
         all_dataframes = ssd_loader()
 
+        print('Start plotting')
+        plot_commands(all_dataframes)
+        # plot_traffic()
+
     print('Start training the neural network')
+    experiment_name = 'converted2'
+    target_types = ['direction']
+    # participants = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'all']
+    participants = ['all']
 
-    target_types = ['direction','geometry']
-    participants = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8']
-    settings.load_weights = 'with_preloading'
-
+    metrics_all = pd.DataFrame()
     for target_type in target_types:
         settings.target_type = target_type
+        settings.load_weights = False
 
         for participant in participants:
             print('------------------------------------------------')
             print('-- Start training:', participant)
             print('------------------------------------------------')
-            settings.iteration_name = '{}_{}_pretrained'.format(target_type, participant)
+            settings.iteration_name = '{}_{}_{}'.format(target_type, participant, experiment_name)
+            # settings.iteration_name = 'test{}'.format(participant)
             participant_ids = [participant]
-            ssd_trainer(all_data, participant_ids)
+            metrics_run = ssd_trainer(all_data, participant_ids)
+            if metrics_all.empty:
+                metrics_all = metrics_run
+                metrics_all.index.name = 'epoch'
+            else:
+                metrics_all = metrics_all.append(metrics_run)
+
+            metrics_all.to_csv(settings.output_dir + '/metrics_{}.csv'.format(experiment_name))
 
 
 if __name__ == "__main__":

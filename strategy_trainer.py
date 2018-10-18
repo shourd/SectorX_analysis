@@ -6,7 +6,7 @@ from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
 from keras.models import Sequential
 from keras.utils import plot_model
 from keras.preprocessing.image import ImageDataGenerator
-from keras.callbacks import ModelCheckpoint
+from keras.callbacks import ModelCheckpoint, CSVLogger, TensorBoard
 from keras.layers.core import Activation
 from keras import backend as K
 from keras.applications import VGG16
@@ -15,7 +15,8 @@ import pickle
 import time
 import matplotlib.pyplot as plt
 from PIL import Image
-from confusion_matrix_script import plot_confusion_matrix
+from confusion_matrix_script import get_confusion_metrics
+import pandas as pd
 
 
 def ssd_trainer(all_data, participant_ids):
@@ -40,24 +41,61 @@ def ssd_trainer(all_data, participant_ids):
 
         def on_epoch_end(self, batch, logs={}):
             self.acc.append(logs.get('acc'))
+            # classification_metrics(model, x_val, y_val)
+
 
     history = AccuracyHistory()
-    log_dir = './logs/' + settings.iteration_name
-    tensor_board_callback = keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, batch_size=32,
+
+    # TENSORBOARD
+    log_dir = settings.output_dir + '/logs/' + settings.iteration_name
+    tensor_board_callback = TensorBoard(log_dir=log_dir, histogram_freq=1, batch_size=32,
                                                         write_graph=False, write_grads=True,
                                                         write_images=False, embeddings_freq=0,
                                                         embeddings_layer_names=None,
                                                         embeddings_metadata=None, embeddings_data=None)
 
     # CHECKPOINTS
-    weights_filepath = settings.output_dir + '/' + settings.iteration_name + '.hdf5'
+    weights_filepath = settings.output_dir + '/weights/' + settings.iteration_name + '.hdf5'
     checkpoint = ModelCheckpoint(weights_filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 
+    # CSV Outputs
+    csv_logger = CSVLogger(settings.output_dir + '/log_{}.csv'.format(settings.iteration_name), append=True, separator=',')
+
+
+    # Classification metrics
+    class Metrics(keras.callbacks.Callback):
+        def on_train_begin(self, logs={}):
+            self._data = []
+
+        def on_epoch_end(self, batch, logs={}):
+            y_pred = model.predict_classes(x_val)
+            y_true = np.argmax(y_val, axis=1)
+
+            informedness, F1_score, MCC = get_confusion_metrics(y_true, y_pred)
+            print('Informedness: {}; MCC: {}'.format(informedness, MCC))
+
+            self._data.append({
+                'iteration_name': settings.iteration_name,
+                'val_acc': logs.get('val_acc'),
+                'val_informedness': informedness,
+                'val_F1_score': F1_score,
+                'MCC': MCC
+            })
+
+            return
+
+        def get_data(self):
+            return self._data
+
+    confusion_metrics = Metrics()
+
+    callbacks_list = [history, tensor_board_callback, confusion_metrics]
+
     if settings.save_model:
-        # callbacks_list = [checkpoint, history, tensor_board_callback]
-        callbacks_list = [checkpoint, history, tensor_board_callback]
-    else:
-        callbacks_list = [history, tensor_board_callback]
+        callbacks_list.append(checkpoint)
+
+    if settings.csv_logger:
+        callbacks_list.append(csv_logger)
 
     # For debugging purposes. Exports augmented image data
     export_dir = None
@@ -94,20 +132,23 @@ def ssd_trainer(all_data, participant_ids):
         validation_data=(x_val, y_val),
         callbacks=callbacks_list)
 
+    """ CLOSING """
+
     score = model.evaluate(x_val, y_val, verbose=0)
     # test_loss = round(score[0], 3)
     test_accuracy = round(score[1], 3)
     train_time = int(time.time() - start_time)
 
-    print('Test accuracy:', test_accuracy)
+    # print('Test accuracy:', test_accuracy)
     print('Train time: {} min'.format(round(train_time/60),1))
 
     # visualize_layer(x_train, model, layer)
 
-    """ Confusion Matrix """
-    y_pred_classes = model.predict_classes(x_val)
-    y_val = np.argmax(y_val, axis=1)
-    plot_confusion_matrix(y_val, y_pred_classes, settings.iteration_name, classes=settings.class_names, normalize=False)
+    confusion_metrics_dict = confusion_metrics.get_data()
+    confusion_metrics_df = pd.DataFrame.from_dict(confusion_metrics_dict)
+    print(confusion_metrics_df)
+
+    return confusion_metrics_df
 
 
 def prepare_training_set(ssd_data, command_data, participant_ids):
@@ -123,7 +164,7 @@ def prepare_training_set(ssd_data, command_data, participant_ids):
     # show_ssd(ssd_id=ssd, ssd_stack=ssd_data)
     # print(command_data.loc[ssd])
 
-    if participant_ids is not 'all':
+    if participant_ids[0] != 'all':
         command_data = command_data[command_data.participant_id.isin(participant_ids)]
     if run_ids is not 'all':
         command_data = command_data[command_data.run_id.isin(run_ids)]
@@ -218,19 +259,24 @@ def create_model(iteration_name):
     model = Sequential()
     model.add(keras.layers.InputLayer(input_shape=settings.ssd_shape))
 
+    # # BASELINE ARCHITECTURE
+    # model.add(Conv2D(32, kernel_size=(2, 2), strides=(1, 1)))
+    # convout = Activation('relu')
+    # model.add(convout)
+    # model.add(Conv2D(32, kernel_size=(5, 5), strides=(2, 2)))
+    # model.add(Conv2D(64, kernel_size=(5, 5), strides=(2, 2), activation='relu'))
+    # model.add(Conv2D(32, kernel_size=(5, 5), strides=(2, 2), activation='relu'))
+
     # BASELINE ARCHITECTURE
     model.add(Conv2D(32, kernel_size=(2, 2), strides=(1, 1)))
     convout = Activation('relu')
     model.add(convout)
-    model.add(Conv2D(32, kernel_size=(5, 5), strides=(2, 2)))
-    # model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(64, kernel_size=(5, 5), strides=(2, 2), activation='relu'))
-    # model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(32, kernel_size=(5, 5), strides=(2, 2), activation='relu'))
-    # model.add(MaxPooling2D(pool_size=(2, 2)))
-    # model.add(Conv2D(64, kernel_size=(5, 5), strides=(1, 1)))
-    # convout2 = Activation('relu')
-    # model.add(convout2)
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(32, kernel_size=(2, 2), strides=(1, 1)))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(64, kernel_size=(2, 2), strides=(1, 1), activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(32, kernel_size=(2, 2), strides=(1, 1), activation='relu'))
 
     # Flattening and FC
     model.add(Flatten())
@@ -238,6 +284,12 @@ def create_model(iteration_name):
     if settings.dropout_rate != 0:
         model.add(Dropout(settings.dropout_rate))
     model.add(Dense(settings.num_classes, activation='softmax'))
+
+    # Freeze the first X layers
+    if settings.freeze_layers:
+        for layer in model.layers[3:]:
+            layer.trainable = False
+
     model.summary()
 
     # Output model structure to disk
@@ -255,7 +307,7 @@ def create_model(iteration_name):
     # model.compile(loss="categorical_crossentropy", optimizer=sgd, metrics=['accuracy'])
 
     if settings.load_weights is not False:
-        weights_filepath = settings.output_dir + '/' + 'without_dropout' + '.hdf5'
+        weights_filepath = settings.output_dir + '/weights/' + settings.load_weights + '.hdf5'
         model.load_weights(weights_filepath, by_name=False)
 
 
@@ -268,8 +320,9 @@ def create_pretrained_model():
     vgg_conv = VGG16(weights='imagenet', include_top=False, input_shape=settings.ssd_shape)
 
     # Freeze the layers except the last 4 layers
-    for layer in vgg_conv.layers[:-4]:
-        layer.trainable = False
+    if settings.freeze_layers:
+        for layer in vgg_conv.layers[:-4]:
+            layer.trainable = False
 
     # Check the trainable status of the individual layers
     for layer in vgg_conv.layers:
@@ -339,6 +392,12 @@ def visualize_layer(x_train, model, layer):
     # plt.show()
 
 
+def save_training_data(informedness_list):
+    filename = '{}/train_time_{}.csv'.format(settings.output_dir, settings.iteration_name)
+    with open(filename, 'a') as f:
+        f.write(",".join(map(str, informedness_list)))
+        f.write("\n")
+
 def show_ssd(ssd_id, ssd_stack):
     ssd = ssd_stack[ssd_id, :, :, :]
     ssd *= 255
@@ -355,8 +414,11 @@ if __name__ == "__main__":
         print('Start importing data from image files')
         all_data = ssd_loader()
 
-    ssd_trainer(all_data)
+    ssd_trainer(all_data, participant_ids=['all'])
 
-    # TODO: Incorporate F1 score
     # TODO: color channels
     # TODO: try again with less dropout
+    # TODO: make background black
+    # TODO: convert DCT to HDG to get more data
+    # TODO: add secondary commands
+    # TODO: lock layers

@@ -1,9 +1,9 @@
+from config import settings
 import os
 import numpy as np
 from config import settings
 from PIL import Image
 import pandas as pd
-from rotate_ssd import rotate_ssd
 import pickle
 
 
@@ -54,7 +54,7 @@ def ssd_loader(dataframes=None):
         """ IMAGE PART """
         ssd = Image.open(settings.ssd_folder + '/' + filename)
 
-        ssd = edit_ssd(ssd, command, df_traffic, settings)
+        ssd = edit_ssd(ssd, command, df_traffic)
 
         if settings.save_png_files:
             filepath = 'data/all_ssd_edit/' + filename
@@ -120,15 +120,31 @@ def generate_command(filename):
     return command
 
 
-def edit_ssd(ssd, command, df_traffic, settings):
-    if settings.convert_to_greyscale:
-        ssd = ssd.convert("L")
+def edit_ssd(ssd, command, df_traffic):
+
     if settings.rotate_upwards:
         ssd = rotate_ssd(ssd, command, df_traffic)  # point speed vector up.
         if settings.crop_top:
             crop_fraction = 0.5
             ssd = ssd.crop(box=(0, 0, settings.ssd_import_size[0], settings.ssd_import_size[0]*crop_fraction))
 
+    if settings.convert_black_to_white:
+
+        from_color = (0, 0, 0)
+        to_color = (255, 255, 255)
+
+        ssd_array = np.array(ssd)  # "data" is a height x width x 4 numpy array
+        red, green, blue = ssd_array.T  # Temporarily unpack the bands for readability
+
+        black_areas = (red == from_color[0]) & (blue == from_color[1]) & (green == from_color[2])
+        ssd_array[black_areas.T] = to_color  # Transpose back needed
+
+        ssd = Image.fromarray(ssd_array)
+
+    if settings.convert_to_greyscale:
+        ssd = ssd.convert("L")
+
+    # resize and crop
     if settings.crop_top:
         ssd = ssd.resize((settings.ssd_import_size[0], settings.ssd_import_size[1]*crop_fraction), Image.NEAREST)
     if not settings.crop_top:
@@ -137,6 +153,33 @@ def edit_ssd(ssd, command, df_traffic, settings):
     return ssd
 
 
+def rotate_ssd(ssd_image, command, df_traffic):
+
+    df_traffic_run = df_traffic.loc[(command.participant_id, command.run_id)]
+    traffic_timestamps = df_traffic_run.timestamp.unique()
+
+    command.timestamp_traffic = command.timestamp - 1  # command always taken at previous state
+    while command.timestamp_traffic not in traffic_timestamps:
+        command.timestamp_traffic -= 1
+
+    try:
+        hdg = df_traffic_run[
+            (df_traffic_run.ACID == command.ACID) &
+            (df_traffic_run.timestamp == command.timestamp_traffic)
+        ].hdg_deg.iloc[0]
+    except IndexError:
+        print('heading lookup error')
+        print(command.participant_id, command.run_id)
+        print('Timestamp command', command.timestamp_traffic)
+        print('command ACID', command.ACID)
+        print('stop')
+        print(df_traffic_run.to_string())
+        print(df_traffic_run.ACID.unique())
+
+    ssd_image = ssd_image.rotate(hdg, resample=Image.NEAREST, expand=False)
+
+    return ssd_image
+
+
 if __name__ == "__main__":
-    settings = Settings()
-    ssd_loader(settings)
+    ssd_loader()

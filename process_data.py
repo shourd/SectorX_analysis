@@ -1,12 +1,14 @@
-from toolset.get_relevant_aircraft import get_relevant_aircraft
 import pickle
-from toolset.conflict import get_conflicts
-from config import settings
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
 from os import mkdir
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+
+from config import settings
+from toolset.conflict import get_conflicts
+from toolset.get_relevant_aircraft import get_relevant_aircraft
 
 
 def create_dataframes(participant_list=None):
@@ -26,6 +28,8 @@ def create_dataframes(participant_list=None):
 
     df_commands = initialize_command_dataframe(only_columns=True)
     df_traffic = initialize_traffic_dataframe()
+
+    copx_list = obtain_copx_list(participant_list)
 
     participants = []
     for i_participant, participant in enumerate(participant_list):
@@ -63,11 +67,17 @@ def create_dataframes(participant_list=None):
                 score.append(logpoint.score)
 
                 """ CREATING TRAFFIC DATAFRAME """
+                # TODO: omschrijven naar 1 operation.
                 for i_aircraft, aircraft in enumerate(logpoint.traffic.aircraft):
+                    aircraft.COPX_x_nm = copx_list.loc[(copx_list.Scenario == run.scenario_id) &
+                                                       (copx_list.ACID == aircraft.ACID)].COPX_x_nm[0]
+                    aircraft.COPX_y_nm = copx_list.loc[(copx_list.Scenario == run.scenario_id) &
+                                                       (copx_list.ACID == aircraft.ACID)].COPX_y_nm[0]
+
                     temp_traffic_df.loc[i_aircraft] = [participant_id, run.SSD, run_id, i_logpoint, logpoint.timestamp,
                                                        aircraft.ACID, aircraft.conflict, aircraft.controlled,
                                                        aircraft.hdg_deg, aircraft.selected, aircraft.spd_kts,
-                                                       aircraft.x_nm, aircraft.y_nm]
+                                                       aircraft.x_nm, aircraft.y_nm, aircraft.COPX_x_nm, aircraft.COPX_y_nm]
 
                 df_traffic = df_traffic.append(temp_traffic_df)
 
@@ -134,6 +144,7 @@ def create_dataframes(participant_list=None):
     df_commands = df_commands[df_commands.type != 'N/A']
     df_commands['direction'] = 'N/A'
     df_commands['preference'] = 'N/A'
+    df_commands['hdg_rel'] = 'N/A'
 
     df_traffic = df_traffic.reset_index()
     df_traffic = df_traffic.set_index(['participant_id', 'run_id', 'index'])
@@ -184,18 +195,27 @@ def analyse_conflicts(participants):
             # print('Percentage of time in conflict: ', round(len(conflicts) / i_logpoint, 2))
 
 
+
+
+
+
 def analyse_commands(all_dataframes):
     """ COMMAND ANALYSIS """
 
     df_traffic = all_dataframes['traffic']
     df_commands = all_dataframes['commands']
 
+    """ TODO: MATRIX MANIPULATION ON ENTIRE DATA FRAME TO CALCULATE HDG TO COPX FROM CURRENT POS. """
+    headings = convert_points_to_heading(df_traffic)
+
     for participant_id in all_dataframes['participants']:
         for run_id in all_dataframes['runs']:
             df_traffic_run = df_traffic.loc[(participant_id, run_id)]
             df_commands_run = df_commands.loc[(participant_id, run_id)]
-            directions = determine_directional_values(df_traffic_run, df_commands_run)
+
+            directions, hdg_rel_list = determine_directional_values(df_traffic_run, df_commands_run)
             df_commands.loc[(participant_id, run_id), 'direction'] = directions
+            df_commands.loc[(participant_id, run_id), 'hdg_rel'] = hdg_rel_list
 
             preferences = determine_control_preference(df_traffic_run, df_commands_run)
             df_commands.loc[(participant_id, run_id), 'preference'] = preferences
@@ -210,6 +230,17 @@ def analyse_commands(all_dataframes):
     return all_dataframes
 
 
+def convert_points_to_heading(df_traffic):
+    pos_points_array = np.array([df_traffic.x_nm, df_traffic.y_nm])
+    copx_points_array = np.array([df_traffic.copx_x_nm, df_traffic.copx_y_nm])
+    delta_points_array = pos_points_array - copx_points_array
+
+    heading_array_rad = np.arctan2(delta_points_array[1,:], delta_points_array[0,:])
+    heading_array_rad += (heading_array_rad < [0]*len(heading_array_rad)) * 2 * np.pi
+    heading_array_deg = heading_array_rad * 360 / (2 * np.pi)
+
+    return heading_array_deg.astype(int)
+
 def determine_directional_values(df_traffic, df_commands):
     """
     CALCULATE WHETHER HDG COMMAND IS 'LEFT' OR 'RIGHT'
@@ -217,6 +248,7 @@ def determine_directional_values(df_traffic, df_commands):
     """
 
     directions = ['N/A'] * len(df_commands)
+    relative_hdg_list = ['N/A'] * len(df_commands)
 
     for i_command in range(len(df_commands)):
         command = df_commands.iloc[i_command]
@@ -234,12 +266,22 @@ def determine_directional_values(df_traffic, df_commands):
                     hdg_relative -= 360
                 elif hdg_relative < -180:
                     hdg_relative += 360
+
+                relative_hdg_list[i_command] = int(hdg_relative)
+
                 # add direction value to Commands table
                 if hdg_relative > 0:
                     directions[i_command] = 'right'
                 else:
                     directions[i_command] = 'left'
             elif command.type == 'SPD':
+                spd_current = df_traffic.loc[
+                    (df_traffic['timestamp'] == command.timestamp_traffic) & (df_traffic['ACID'] == command.ACID), [
+                        'spd_kts']]
+                hdg_current = spd_current.iloc[0][0]  # take value only
+                spd_resolution = command.value
+                spd_relative = spd_resolution - hdg_current
+
                 if command.value > 250:
                     directions[i_command] = 'increase'
                 elif command.value < 250:
@@ -250,7 +292,7 @@ def determine_directional_values(df_traffic, df_commands):
             print(df_commands.to_string())
             print('Index Error!')
 
-    return directions
+    return directions, relative_hdg_list
 
 
 def determine_control_preference(df_traffic, df_commands):
@@ -278,6 +320,10 @@ def determine_control_preference(df_traffic, df_commands):
             print('Index error! part II')
 
     return preferences
+
+
+def convert_dct_to_hdg(copx_list):
+    print('test')
 
 
 def initialize_experiment_setup():
@@ -320,6 +366,17 @@ def initialize_command_dataframe(only_columns=False):
     return command_list
 
 
+def initialize_traffic_dataframe():
+    """ INITIALIZE TRAFFIC DATAFRAME """
+    columns = ['participant_id', 'SSD', 'run_id',
+               'i_logpoint', 'timestamp',
+               'ACID', 'conflict', 'controlled', 'hdg_deg',
+               'selected', 'spd_kts', 'x_nm', 'y_nm', 'COPX_x_nm', 'COPX_y_nm']
+    command_list = pd.DataFrame(columns=columns)
+
+    return command_list
+
+
 def obtain_sector_points(participant_list):
     sector_points = []
     for sector in participant_list[0].runs[0].scenario.airspace.sectors.sector:
@@ -330,6 +387,24 @@ def obtain_sector_points(participant_list):
                 sector_points.append([pointX, pointY])
     return sector_points
 
+
+def obtain_copx_list(participant_list):
+    copx_df = pd.DataFrame()
+    for i_run in [0,1]:
+        for aircraft in participant_list[0].runs[i_run].scenario.traffic.aircraft:
+            if aircraft.COPX == 'MIFA': aircraft.COPX_y_nm = 22.0  # hardcoded due to error. Remove.
+            df = pd.DataFrame({'Scenario': 'S{}'.format(i_run+1),
+                               'ACID': aircraft.ACID,
+                               'COPX': aircraft.COPX,
+                               'COPX_x_nm': aircraft.COPX_x_nm,
+                               'COPX_y_nm': aircraft.COPX_y_nm},
+                              index=[0])
+            if copx_df.empty:
+                copx_df = df
+            else:
+                copx_df = copx_df.append(df)
+
+    return copx_df
 
 def determine_command_type(command):
     # Define command type
@@ -352,17 +427,6 @@ def determine_command_type(command):
     return command.type
 
 
-def initialize_traffic_dataframe():
-    """ INITIALIZE TRAFFIC DATAFRAME """
-    columns = ['participant_id', 'SSD', 'run_id',
-               'i_logpoint', 'timestamp',
-               'ACID', 'conflict', 'controlled', 'hdg_deg',
-               'selected', 'spd_kts', 'x_nm', 'y_nm']
-    command_list = pd.DataFrame(columns=columns)
-
-    return command_list
-
-
 def load_from_pickle():
     print("Loading data from pickle...", end="")
     pickle_file = open(settings.data_folder + settings.serialized_data_filename, "rb")
@@ -375,17 +439,18 @@ def load_from_pickle():
 
 if __name__ == "__main__":
 
-    try:
-        # participants = pickle.load(open(settings.data_folder + settings.processed_data_filename, "rb"))
-        all_data = pickle.load(open(settings.data_folder + 'all_dataframes_1.p', "rb"))
-        print('Data loaded from Pickle')
-    except FileNotFoundError:
-        print('Start loading data.')
-        all_data = create_dataframes()  # generates all_dataframes.p
-        print('Dataframes created and saved to Pickle')
-        all_data = analyse_commands(all_data)  # generates all_dataframes_2.p
-        print('Commands analyzed and saved to Pickle')
-
+    # try:
+    #     # participants = pickle.load(open(settings.data_folder + settings.processed_data_filename, "rb"))
+    #     all_data = pickle.load(open(settings.data_folder + 'all_dataframes_1.p', "rb"))
+    #     print('Data loaded from Pickle')
+    # except FileNotFoundError:
+    #     print('Start loading data.')
+    #     all_data = create_dataframes()  # generates all_dataframes.p
+    #     print('Dataframes created and saved to Pickle')
+    #     all_data = analyse_commands(all_data)  # generates all_dataframes_2.p
+    #     print('Commands analyzed and saved to Pickle')
+    #
     # analyse_conflicts(participants)
-
-
+    all_data = create_dataframes()  # generates all_dataframes.p
+    # all_data = pickle.load(open(settings.data_folder + 'all_dataframes.p', "rb"))
+    analyse_commands(all_data)

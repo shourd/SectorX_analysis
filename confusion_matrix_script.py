@@ -4,7 +4,7 @@ import itertools
 import numpy as np
 import matplotlib.pyplot as plt
 
-from sklearn.metrics import confusion_matrix, classification_report, matthews_corrcoef, f1_score
+from sklearn.metrics import confusion_matrix, classification_report, matthews_corrcoef, f1_score, balanced_accuracy_score
 
 
 def get_confusion_metrics(y_test, y_pred,
@@ -48,13 +48,16 @@ def get_confusion_metrics(y_test, y_pred,
             sensitivity = 0
 
         specificity = TN / (TN + FP)
-        informedness = round(sensitivity + specificity - 1, 2)
+        # informedness = round(sensitivity + specificity - 1, 3)
     else:
-        informedness = 'NaN'
+        print('ERROR: Confusion matrix not defined.')
 
-    F1_score = round(f1_score(y_test, y_pred), 2)
-    MCC = round(matthews_corrcoef(y_test, y_pred), 2)
+    """ CALCULATE METRICS """
+    F1_score = round(f1_score(y_test, y_pred), 3)
+    MCC = round(matthews_corrcoef(y_test, y_pred), 3)
     # http://scikit-learn.org/stable/modules/generated/sklearn.metrics.matthews_corrcoef.html --> MCC
+    informedness = round(balanced_accuracy_score(y_test, y_pred, adjusted=True), 3)
+    # http: // scikit - learn.org / stable / modules / model_evaluation.html
 
     plt.figure()
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
@@ -75,7 +78,7 @@ def get_confusion_metrics(y_test, y_pred,
     plt.xlabel('Predicted label')
     plt.tight_layout()
 
-    plt.savefig('figures/confusion_{}.png'.format(iteration_name))
+    plt.savefig(settings.output_dir + '/figures/confusion_{}.png'.format(iteration_name))
     plt.close()
 
     return informedness, F1_score, MCC

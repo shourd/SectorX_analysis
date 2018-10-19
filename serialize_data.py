@@ -2,8 +2,9 @@ import os
 import xml.etree.ElementTree as ET
 import pickle
 import re
-from toolset.data_objects import Participant, Run, Run, Command
+from toolset.data_objects import Participant, Run, Command
 from config import settings
+
 
 def serialize_data():
     """ Convert XML files to python Classes/objects """

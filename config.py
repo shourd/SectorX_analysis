@@ -6,6 +6,7 @@ class Settings:
     ssd_folder = 'data/all_ssd'
     output_dir = 'output'
     serialized_data_filename = "serialized_data.p"
+    input_file = 'all_dataframes_3_half.p'
 
     # SERIALIZE AND PROCESS SETTINGS
     caution_time = 120          # orange conflict
@@ -56,7 +57,7 @@ class Settings:
         if self.crop_top:
             height = int(self.ssd_import_size[1] / 2)
         else:
-            height = self.ssd_import_size
+            height = int(self.ssd_import_size[1])
 
         if self.convert_to_greyscale:
             channels = 1

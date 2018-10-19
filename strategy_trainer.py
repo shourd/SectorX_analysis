@@ -1,22 +1,25 @@
-from config import settings
-import numpy as np
-from ssd_loader import ssd_loader
-import keras
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
-from keras.models import Sequential
-from keras.utils import plot_model
-from keras.preprocessing.image import ImageDataGenerator
-from keras.callbacks import ModelCheckpoint, CSVLogger, TensorBoard
-from keras.layers.core import Activation
-from keras import backend as K
-from keras.applications import VGG16
-from os import path, makedirs
 import pickle
 import time
+from os import path, makedirs
+
+import keras
 import matplotlib.pyplot as plt
-from PIL import Image
-from confusion_matrix_script import get_confusion_metrics
+import numpy as np
 import pandas as pd
+from PIL import Image
+from keras import backend as K
+from keras.applications import VGG16
+from keras.callbacks import ModelCheckpoint, CSVLogger, TensorBoard
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
+from keras.layers.core import Activation
+from keras.models import Sequential
+from keras.preprocessing.image import ImageDataGenerator
+from keras.utils import plot_model
+
+import target_data_preparation
+from config import settings
+from confusion_matrix_script import get_confusion_metrics
+from ssd_loader import ssd_loader
 
 
 def ssd_trainer(all_data, participant_ids):
@@ -154,8 +157,10 @@ def ssd_trainer(all_data, participant_ids):
 def prepare_training_set(ssd_data, command_data, participant_ids):
     """ FILTER COMMANDS """
     run_ids = 'all'  #['R1'] #'all'
-    command_types = ['HDG']
-    settings.num_classes = 2  #len(command_types)
+    if settings.target_type == 'direction' or settings.target_type == 'geometry':
+        command_types = ['HDG']
+    elif settings.target_type == 'command_type':
+        command_types = ['HDG', 'SPD']
 
     command_data = command_data[command_data.ssd_id != 'N/A']
     command_data = command_data.reset_index().set_index('ssd_id').sort_index()
@@ -175,70 +180,12 @@ def prepare_training_set(ssd_data, command_data, participant_ids):
     actions_ids = command_data.index.unique()
     x_data = ssd_data[actions_ids, :, :, :]
 
-    target_list = make_categorical_list(command_data, settings.target_type)
+    target_list = target_data_preparation.make_categorical_list(command_data, settings.target_type)
 
     y_data = keras.utils.to_categorical(target_list, settings.num_classes)
 
     return x_data, y_data
 
-
-def make_categorical_list(command_data, target_type):
-    """
-    :param command_data:
-    :param target_type: type can be 1. command type 2. command direction (left/right) or 3. command geometry
-    :return: target_list
-    """
-    target_list = []
-
-    """ COMMAND TYPE """
-    if target_type is 'command_type':
-        for command in list(command_data.TYPE):
-            if command == 'HDG': res = 0
-            elif command == 'SPD': res = 1
-            elif command == 'DCT': res = 2
-            elif command == 'TOC': res = 3
-            else:
-                print('ERROR: Command target_type not recognized')
-                break
-            target_list.append(res)
-
-    elif target_type is 'direction':
-        settings.class_names = ['Left', 'Right']
-        for command in list(command_data.direction):
-            if command == 'left': res = 0
-            elif command == 'right': res = 1
-            else:
-                print('ERROR: Command target_type not recognized')
-                break
-            target_list.append(res)
-
-        number_left = target_list.count(0)
-        number_right = target_list.count(1)
-        total = number_left + number_right
-        if total == 0:
-            print('ERROR: No data was selected!')
-        print('Left: {} ({}%)'.format(number_left, round(100*number_left/total),0))
-        print('Right: {} ({}%)'.format(number_right, round(100*number_right/total),0))
-
-    elif target_type is 'geometry':
-        settings.class_names = ['In front', 'Behind']
-        for command in list(command_data.preference):
-            if command == 'infront':
-                res = 0
-            elif command == 'behind':
-                res = 1
-            else:
-                print('ERROR: Command target_type not recognized')
-                break
-            target_list.append(res)
-
-        number_infront = target_list.count(0)
-        number_behind = target_list.count(1)
-        total = number_infront + number_behind
-        print('In front: {} ({}%)'.format(number_infront, round(100 * number_infront / total), 0))
-        print('Behind: {} ({}%)'.format(number_behind, round(100 * number_behind / total), 0))
-
-    return target_list
 
 def split_data(x_data, y_data):
     train_length = int(settings.train_val_ratio * len(x_data))
@@ -271,7 +218,7 @@ def create_model(iteration_name):
     model.add(Conv2D(32, kernel_size=(2, 2), strides=(1, 1)))
     convout = Activation('relu')
     model.add(convout)
-    model.add(MaxPooling2D(pool_size=(2, 2)))
+    # model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Conv2D(32, kernel_size=(2, 2), strides=(1, 1)))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Conv2D(64, kernel_size=(2, 2), strides=(1, 1), activation='relu'))
@@ -293,11 +240,11 @@ def create_model(iteration_name):
     model.summary()
 
     # Output model structure to disk
-    if not path.exists(settings.output_dir):
+    if not path.exists(settings.output_dir + '/figures'):
         print('Output directory created')
-        makedirs(settings.output_dir)
+        makedirs(settings.output_dir + '/figures')
 
-    plot_model(model, to_file='figures/structure_{}.png'.format(iteration_name), show_shapes=True, show_layer_names=False)
+    plot_model(model, to_file='{}/figures/structure_{}.png'.format(settings.output_dir, iteration_name), show_shapes=True, show_layer_names=False)
 
     model.compile(loss=keras.losses.categorical_crossentropy,
                   optimizer=keras.optimizers.Adam(),
@@ -383,7 +330,7 @@ def visualize_layer(x_train, model, layer):
     for i in range(convolutions.shape[2]):
         ax = fig.add_subplot(n, n, i + 1)
         ax.imshow(convolutions[:,:,i], cmap='gray')
-    plt.savefig('figures/filters.png')
+    plt.savefig('{}/figures/filters.png'.format(settings.output_dir))
     plt.close()
     # plt.show()
 

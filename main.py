@@ -6,11 +6,12 @@ from ssd_loader import ssd_loader
 from strategy_trainer import ssd_trainer
 import pickle
 import pandas as pd
+from plot_results import plot_results
 
 def main():
 
     try:
-        all_data = pickle.load(open(settings.data_folder + 'all_dataframes_3.p', "rb"))
+        all_data = pickle.load(open(settings.data_folder + settings.input_file, "rb"))
         print('Data loaded from pickle')
     except FileNotFoundError:
         print('Start serializing data')
@@ -26,15 +27,15 @@ def main():
         all_dataframes = analyse_conflicts(participant_list)
 
         print('Start loading SSDs')
-        all_dataframes = ssd_loader()
+        all_dataframes = ssd_loader(all_dataframes)
 
         print('Start plotting')
         plot_commands(all_dataframes)
         # plot_traffic()
 
     print('Start training the neural network')
-    experiment_name = 'converted2'
-    target_types = ['direction']
+    experiment_name = 'geometry_normal'
+    target_types = ['geometry']
     # participants = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'all']
     participants = ['all']
 
@@ -59,6 +60,7 @@ def main():
 
             metrics_all.to_csv(settings.output_dir + '/metrics_{}.csv'.format(experiment_name))
 
+    plot_results
 
 if __name__ == "__main__":
 

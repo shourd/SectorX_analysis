@@ -78,7 +78,7 @@ def ssd_loader(dataframes=None):
     dataframes['commands'] = df_commands
     dataframes['ssd_images'] = ssd_stack
 
-    pickle.dump(dataframes, open(settings.data_folder + 'all_dataframes_3.p', "wb"))
+    pickle.dump(dataframes, open(settings.data_folder + 'all_dataframes_3_half.p', "wb"))
     print('-----------------------------------------------------------------')
     print('{} SDDs saved to pickle.'.format(len(ssd_stack)))
     print('{} SSDs filtered out'.format(i_file - ssd_id))
@@ -126,7 +126,9 @@ def edit_ssd(ssd, command, df_traffic):
         ssd = rotate_ssd(ssd, command, df_traffic)  # point speed vector up.
         if settings.crop_top:
             crop_fraction = 0.5
-            ssd = ssd.crop(box=(0, 0, settings.ssd_import_size[0], settings.ssd_import_size[0]*crop_fraction))
+            current_height = ssd.height
+            current_width = ssd.width
+            ssd = ssd.crop(box=(0, 0, ssd.width, ssd.height*crop_fraction))
 
     if settings.convert_black_to_white:
 
@@ -146,7 +148,7 @@ def edit_ssd(ssd, command, df_traffic):
 
     # resize and crop
     if settings.crop_top:
-        ssd = ssd.resize((settings.ssd_import_size[0], settings.ssd_import_size[1]*crop_fraction), Image.NEAREST)
+        ssd = ssd.resize((settings.ssd_import_size[0], int(settings.ssd_import_size[1]*crop_fraction)), Image.NEAREST)
     if not settings.crop_top:
         ssd = ssd.resize(settings.ssd_import_size, Image.NEAREST)
 

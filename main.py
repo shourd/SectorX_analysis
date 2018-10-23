@@ -23,44 +23,39 @@ def main():
         print('Start processing commands')
         all_dataframes = analyse_commands(all_dataframes)
 
-        print('Start processing conflicts')
-        all_dataframes = analyse_conflicts(participant_list)
+        # print('Start processing conflicts')
+        # all_dataframes = analyse_conflicts(participant_list)
 
         print('Start loading SSDs')
-        all_dataframes = ssd_loader(all_dataframes)
+        all_data = ssd_loader(all_dataframes)
 
         print('Start plotting')
-        plot_commands(all_dataframes)
+        plot_commands(all_data)
         # plot_traffic()
 
     print('Start training the neural network')
-    experiment_name = 'geometry_normal'
-    target_types = ['geometry']
-    # participants = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'all']
-    participants = ['all']
 
     metrics_all = pd.DataFrame()
-    for target_type in target_types:
+    for target_type in settings.target_types:
         settings.target_type = target_type
         settings.load_weights = False
 
-        for participant in participants:
+        for participant in settings.participants:
             print('------------------------------------------------')
             print('-- Start training:', participant)
             print('------------------------------------------------')
-            settings.iteration_name = '{}_{}_{}'.format(target_type, participant, experiment_name)
-            # settings.iteration_name = 'test{}'.format(participant)
+            settings.iteration_name = '{}_{}_{}'.format(target_type, participant, settings.experiment_name)
             participant_ids = [participant]
             metrics_run = ssd_trainer(all_data, participant_ids)
+            metrics_run.index.name = 'epoch'
             if metrics_all.empty:
                 metrics_all = metrics_run
-                metrics_all.index.name = 'epoch'
             else:
                 metrics_all = metrics_all.append(metrics_run)
 
-            metrics_all.to_csv(settings.output_dir + '/metrics_{}.csv'.format(experiment_name))
+            metrics_all.to_csv(settings.output_dir + '/metrics_{}.csv'.format(settings.experiment_name))
 
-    plot_results
+    plot_results(settings.experiment_name)
 
 if __name__ == "__main__":
 

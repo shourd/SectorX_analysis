@@ -1,9 +1,16 @@
 from config import settings
+from plot_data import custom_round
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 def make_categorical_list(command_data, target_type):
     """
     :param command_data:
-    :param target_type: type can be 1. command type 2. command direction (left/right) or 3. command geometry
+    :param target_type: type can be:
+        1. command_type
+        2. direction (left/right)
+        3. geometry
+        4. relative_heading
     :return: target_list
     """
     target_list = []
@@ -55,5 +62,28 @@ def make_categorical_list(command_data, target_type):
         total = number_infront + number_behind
         print('In front: {} ({}%)'.format(number_infront, round(100 * number_infront / total), 0))
         print('Behind: {} ({}%)'.format(number_behind, round(100 * number_behind / total), 0))
+
+    elif target_type is 'relative_heading':
+
+        # command_data[command_data.hdg_rel > 90]
+
+        heading_cap = 60
+        heading_resolution = 30  #deg
+        settings.num_classes = int(heading_cap / heading_resolution + 1)
+        settings.class_names = []
+        for class_number in range(settings.num_classes):
+            class_name = str(int(class_number * heading_resolution)) + ' deg'
+            settings.class_names.append(class_name)
+
+        for command in list(command_data.hdg_rel):
+            command_rounded = abs(custom_round(command, heading_resolution))
+            if command_rounded > heading_cap: command_rounded = heading_cap
+
+            res = command_rounded / heading_resolution
+            target_list.append(res)
+
+        sns.set()
+        # sns.distplot(list(command_data.hdg_rel), bins=18)
+        # sns.distplot(list(abs(command_data.hdg_rel)), bins=18)
 
     return target_list

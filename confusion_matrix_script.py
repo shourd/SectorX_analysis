@@ -7,9 +7,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, classification_report, matthews_corrcoef, f1_score, balanced_accuracy_score
 
 
-def get_confusion_metrics(y_test, y_pred,
-                          iteration_name=settings.iteration_name,
-                          classes=settings.class_names,
+def get_confusion_metrics(y_test, y_pred, epoch_no=0,
                           normalize=False,
                           title='Confusion matrix',
                           cmap=plt.cm.Blues):
@@ -34,52 +32,40 @@ def get_confusion_metrics(y_test, y_pred,
     print(cm)
     # print(report)
 
-    """ Calculate Informedness """
-
-    if len(cm) > 1:
-        TP = cm[0,0]
-        TN = cm[1,1]
-        FP = cm[0,1]
-        FN = cm[1,0]
-
-        if TP != 0:
-            sensitivity = TP / (TP + FN)
-        else:
-            sensitivity = 0
-
-        specificity = TN / (TN + FP)
-        # informedness = round(sensitivity + specificity - 1, 3)
-    else:
-        print('ERROR: Confusion matrix not defined.')
-
     """ CALCULATE METRICS """
-    F1_score = round(f1_score(y_test, y_pred), 3)
+    if settings.target_type == 'relative_heading':
+        average = 'micro'
+    else:
+        average = 'binary'
+
+    F1_score = round(f1_score(y_test, y_pred, average=average), 3)
     MCC = round(matthews_corrcoef(y_test, y_pred), 3)
-    # http://scikit-learn.org/stable/modules/generated/sklearn.metrics.matthews_corrcoef.html --> MCC
     informedness = round(balanced_accuracy_score(y_test, y_pred, adjusted=True), 3)
     # http: // scikit - learn.org / stable / modules / model_evaluation.html
 
-    plt.figure()
-    plt.imshow(cm, interpolation='nearest', cmap=cmap)
-    plt.title(title)
-    plt.colorbar()
-    tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes, rotation=45)
-    plt.yticks(tick_marks, classes)
+    if epoch_no == 15:
+        plt.figure()
+        plt.imshow(cm, interpolation='nearest', cmap=cmap)
+        plt.title(title)
+        plt.colorbar()
+        tick_marks = np.arange(len(settings.class_names))
+        plt.xticks(tick_marks, settings.class_names, rotation=45)
+        plt.yticks(tick_marks, settings.class_names)
 
-    fmt = '.2f' if normalize else 'd'
-    thresh = cm.max() / 2.
-    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, format(cm[i, j], fmt),
-                 horizontalalignment="center",
-                 color="white" if cm[i, j] > thresh else "black")
+        fmt = '.2f' if normalize else 'd'
+        thresh = cm.max() / 2.
+        for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+            plt.text(j, i, format(cm[i, j], fmt),
+                     horizontalalignment="center",
+                     color="white" if cm[i, j] > thresh else "black")
 
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
-    plt.tight_layout()
+        plt.ylabel('True label')
+        plt.xlabel('Predicted label')
+        plt.tight_layout()
+        plt.grid(b=False)
 
-    plt.savefig(settings.output_dir + '/figures/confusion_{}.png'.format(iteration_name))
-    plt.close()
+        plt.savefig(settings.output_dir + '/figures/confusion_{}_epoch{}.png'.format(settings.iteration_name, epoch_no))
+        plt.close()
 
     return informedness, F1_score, MCC
 

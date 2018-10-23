@@ -15,6 +15,7 @@ from keras.layers.core import Activation
 from keras.models import Sequential
 from keras.preprocessing.image import ImageDataGenerator
 from keras.utils import plot_model
+from sklearn.model_selection import train_test_split
 
 import target_data_preparation
 from config import settings
@@ -29,7 +30,13 @@ def ssd_trainer(all_data, participant_ids):
     x_data, y_data = prepare_training_set(all_data['ssd_images'], all_data['commands'], participant_ids)
 
     """ SPLIT TRAIN AND VALIDATION DATA """
-    x_train, y_train, x_val, y_val = split_data(x_data, y_data)
+    # x_train, y_train, x_val, y_val = split_data(x_data, y_data) # own function.
+    try:
+        x_train, x_val, y_train, y_val = train_test_split(x_data, y_data, test_size = 1-settings.train_val_ratio,
+                                                      shuffle=True, stratify=y_data)
+    except ValueError:
+        print('---------------------------------- ERROR ----------------------------------')
+        print('Only one data sample of one class avaialbe. Not enough for stratified class distribution.')
 
     """ CREATE MODEL """
     # model, layer = create_model(settings)
@@ -58,8 +65,9 @@ def ssd_trainer(all_data, participant_ids):
                                                         embeddings_metadata=None, embeddings_data=None)
 
     # CHECKPOINTS
-    weights_filepath = settings.output_dir + '/weights/' + settings.iteration_name + '.hdf5'
-    checkpoint = ModelCheckpoint(weights_filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+    weights_folder = settings.output_dir + '/weights/'
+    makedirs(weights_folder, exist_ok=True)
+    checkpoint = ModelCheckpoint(weights_folder + settings.iteration_name + '.hdf5', monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 
     # CSV Outputs
     csv_logger = CSVLogger(settings.output_dir + '/log_{}.csv'.format(settings.iteration_name), append=True, separator=',')
@@ -69,12 +77,12 @@ def ssd_trainer(all_data, participant_ids):
     class Metrics(keras.callbacks.Callback):
         def on_train_begin(self, logs={}):
             self._data = []
+            self.epoch_no = 1
 
         def on_epoch_end(self, batch, logs={}):
             y_pred = model.predict_classes(x_val)
             y_true = np.argmax(y_val, axis=1)
-
-            informedness, F1_score, MCC = get_confusion_metrics(y_true, y_pred)
+            informedness, F1_score, MCC = get_confusion_metrics(y_true, y_pred, self.epoch_no)
             print('Informedness: {}; MCC: {}'.format(informedness, MCC))
 
             self._data.append({
@@ -84,6 +92,8 @@ def ssd_trainer(all_data, participant_ids):
                 'val_F1_score': F1_score,
                 'MCC': MCC
             })
+
+            self.epoch_no += 1
 
             return
 
@@ -112,7 +122,7 @@ def ssd_trainer(all_data, participant_ids):
     train_datagen = ImageDataGenerator(
         rotation_range=settings.rotation_range,
         fill_mode='constant',
-        cval=0,  # fill with black pixels [0;1]
+        cval=1,  # fill with white pixels [0;1]
     )
 
     train_generator = train_datagen.flow(
@@ -157,13 +167,17 @@ def ssd_trainer(all_data, participant_ids):
 def prepare_training_set(ssd_data, command_data, participant_ids):
     """ FILTER COMMANDS """
     run_ids = 'all'  #['R1'] #'all'
-    if settings.target_type == 'direction' or settings.target_type == 'geometry':
+    if (settings.target_type == 'direction') or (settings.target_type == 'geometry'):
         command_types = ['HDG']
+    elif settings.target_type == 'relative_heading':
+        command_types = ['HDG', 'DCT']
+        command_data = command_data[command_data.hdg_rel != 'N/A']
     elif settings.target_type == 'command_type':
         command_types = ['HDG', 'SPD']
 
     command_data = command_data[command_data.ssd_id != 'N/A']
     command_data = command_data.reset_index().set_index('ssd_id').sort_index()
+
 
     # ssd = 100
     # show_ssd(ssd_id=ssd, ssd_stack=ssd_data)
@@ -175,6 +189,9 @@ def prepare_training_set(ssd_data, command_data, participant_ids):
         command_data = command_data[command_data.run_id.isin(run_ids)]
     if command_types is not 'all':
         command_data = command_data[command_data.type.isin(command_types)]
+    if settings.ssd == 'ON' or settings.ssd == 'OFF':
+        command_data = command_data[command_data.SSD == settings.ssd]
+
 
     # filter ssds based on remaining actions
     actions_ids = command_data.index.unique()
@@ -206,14 +223,6 @@ def create_model(iteration_name):
     model = Sequential()
     model.add(keras.layers.InputLayer(input_shape=settings.ssd_shape))
 
-    # # BASELINE ARCHITECTURE
-    # model.add(Conv2D(32, kernel_size=(2, 2), strides=(1, 1)))
-    # convout = Activation('relu')
-    # model.add(convout)
-    # model.add(Conv2D(32, kernel_size=(5, 5), strides=(2, 2)))
-    # model.add(Conv2D(64, kernel_size=(5, 5), strides=(2, 2), activation='relu'))
-    # model.add(Conv2D(32, kernel_size=(5, 5), strides=(2, 2), activation='relu'))
-
     # BASELINE ARCHITECTURE
     model.add(Conv2D(32, kernel_size=(2, 2), strides=(1, 1)))
     convout = Activation('relu')
@@ -234,7 +243,7 @@ def create_model(iteration_name):
 
     # Freeze the first X layers
     if settings.freeze_layers:
-        for layer in model.layers[3:]:
+        for layer in model.layers[:4]:
             layer.trainable = False
 
     model.summary()
@@ -256,6 +265,7 @@ def create_model(iteration_name):
     if settings.load_weights is not False:
         weights_filepath = settings.output_dir + '/weights/' + settings.load_weights + '.hdf5'
         model.load_weights(weights_filepath, by_name=False)
+        print('Weights loaded from: ', weights_filepath)
 
 
     return model, convout
@@ -364,8 +374,6 @@ if __name__ == "__main__":
     ssd_trainer(all_data, participant_ids=['all'])
 
     # TODO: color channels
-    # TODO: try again with less dropout
-    # TODO: make background black
-    # TODO: convert DCT to HDG to get more data
     # TODO: add secondary commands
-    # TODO: lock layers
+    # TODO: vary over number of locked layers with transfer learning
+    # bulid a numerical approximator instead of class approximator

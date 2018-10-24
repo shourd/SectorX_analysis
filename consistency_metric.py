@@ -2,6 +2,7 @@ from config import settings
 import pickle
 import numpy as np
 from scipy import stats
+import pandas as pd
 
 def calc_consistency_metric():
     all_data = pickle.load(open(settings.data_folder + settings.input_file, "rb"))
@@ -12,6 +13,7 @@ def calc_consistency_metric():
     total_unique = len(commands_temp.hdg_rel.unique())
 
     consistency_list = []
+    consistency_df = pd.DataFrame()
     for participant in settings.columns:
 
         commands_p = commands_df[commands_df.participant_id == participant]
@@ -54,6 +56,23 @@ def calc_consistency_metric():
         total_consistency = round((type_consistency + direction_consistency + value_consistency) / 3, 2)
         consistency_list.append(total_consistency)
 
+        dict = {
+            'Participant': [participant],
+            'Type': [type_consistency],
+            'Direction': [direction_consistency],
+            'Value': [value_consistency],
+            'Value (variance)': [variance_fraction],
+            'Value (unique)': [unique_fraction],
+            'Final': [total_consistency]
+        }
+
+        run_df = pd.DataFrame.from_dict(dict, orient='columns')
+
+        if consistency_df.empty:
+            consistency_df = run_df
+        else:
+            consistency_df = consistency_df.append(run_df)
+
         print('--------------------------')
         print('Participant: {}'.format(participant))
         print('Type: ', type_consistency)
@@ -63,14 +82,12 @@ def calc_consistency_metric():
 
 
     consistency_array = np.array(consistency_list)
-    consistency_zscores = stats.zscore(consistency_array)
+    consistency_zscores = np.round(stats.zscore(consistency_array), decimals=2)
     print('--------------------------')
     print('Z-scores: ', consistency_zscores)
-
-
     print('Average consistency: ', round(np.array(consistency_list).mean(), 2))
 
-
+    consistency_df.to_csv(settings.output_dir + '/consistency_metrics.csv')
 
 def normalize_consistency(x, y):
     total = x + y

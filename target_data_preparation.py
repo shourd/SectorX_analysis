@@ -17,7 +17,8 @@ def make_categorical_list(command_data, target_type):
 
     """ COMMAND TYPE """
     if target_type is 'command_type':
-        for command in list(command_data.TYPE):
+        settings.class_names = ['HDG', 'SPD', 'DCT']
+        for command in list(command_data.type):
             if command == 'HDG': res = 0
             elif command == 'SPD': res = 1
             elif command == 'DCT': res = 2
@@ -26,6 +27,16 @@ def make_categorical_list(command_data, target_type):
                 print('ERROR: Command target_type not recognized')
                 break
             target_list.append(res)
+
+        number_HDG = target_list.count(0)
+        number_SPD = target_list.count(1)
+        number_DCT = target_list.count(2)
+        total = number_HDG + number_SPD + number_DCT
+        if total == 0:
+            print('ERROR: No data was selected!')
+        print('HDG: {} ({}%)'.format(number_HDG, round(100 * number_HDG / total),0))
+        print('SPD: {} ({}%)'.format(number_SPD, round(100 * number_SPD / total),0))
+        print('DCT: {} ({}%)'.format(number_DCT, round(100 * number_DCT / total), 0))
 
     elif target_type is 'direction':
         settings.class_names = ['Left', 'Right']

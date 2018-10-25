@@ -41,13 +41,14 @@ def main():
         settings.load_weights = False
 
         for participant in settings.participants:
+            settings.current_participant = participant
             print('------------------------------------------------')
             print('-- Start training:', participant)
             print('------------------------------------------------')
             settings.iteration_name = '{}_{}_{}'.format(target_type, participant, settings.experiment_name)
             participant_ids = [participant]
             metrics_run = ssd_trainer(all_data, participant_ids)
-            metrics_run.index.name = 'epoch'
+            # metrics_run.index.name = 'epoch'
             if metrics_all.empty:
                 metrics_all = metrics_run
             else:

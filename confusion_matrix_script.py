@@ -22,7 +22,6 @@ def get_confusion_metrics(y_test, y_pred, epoch_no=0,
     cm = confusion_matrix(y_test, y_pred)
     report = classification_report(y_test, y_pred, [0, 1], settings.class_names)
 
-
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
         print("Normalized confusion matrix")
@@ -33,10 +32,12 @@ def get_confusion_metrics(y_test, y_pred, epoch_no=0,
     # print(report)
 
     """ CALCULATE METRICS """
-    if settings.target_type == 'relative_heading':
+    if settings.num_classes == 2:
+        average = 'binary'
+    elif settings.num_classes > 2:
         average = 'micro'
     else:
-        average = 'binary'
+        average = 'Only one class provided.'
 
     F1_score = round(f1_score(y_test, y_pred, average=average), 3)
     MCC = round(matthews_corrcoef(y_test, y_pred), 3)

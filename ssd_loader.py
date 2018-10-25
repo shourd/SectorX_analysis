@@ -130,18 +130,8 @@ def edit_ssd(ssd, command, df_traffic):
             current_width = ssd.width
             ssd = ssd.crop(box=(0, 0, ssd.width, ssd.height*crop_fraction))
 
-    if settings.convert_black_to_white:
-
-        from_color = (0, 0, 0)
-        to_color = (255, 255, 255)
-
-        ssd_array = np.array(ssd)  # "data" is a height x width x 4 numpy array
-        red, green, blue = ssd_array.T  # Temporarily unpack the bands for readability
-
-        black_areas = (red == from_color[0]) & (blue == from_color[1]) & (green == from_color[2])
-        ssd_array[black_areas.T] = to_color  # Transpose back needed
-
-        ssd = Image.fromarray(ssd_array)
+    if settings.convert_background or settings.remove_grey_noise:
+        ssd = transform_colors(ssd)
 
     if settings.convert_to_greyscale:
         ssd = ssd.convert("L")
@@ -151,6 +141,39 @@ def edit_ssd(ssd, command, df_traffic):
         ssd = ssd.resize((settings.ssd_import_size[0], int(settings.ssd_import_size[1]*crop_fraction)), Image.NEAREST)
     if not settings.crop_top:
         ssd = ssd.resize(settings.ssd_import_size, Image.NEAREST)
+
+    return ssd
+
+def transform_colors(ssd):
+    """
+    :param ssd PIL Image
+    :return: ssd PIL Image with transformed colors
+    """
+
+    # from_color = (0, 0, 0)
+    # background_color = (255, 255, 255)
+    from_color = (255, 255, 255)
+    background_color = (0, 0, 0)
+
+    ssd_array = np.array(ssd)  # "data" is a height x width x R x G x B array
+    red, green, blue = ssd_array.T
+
+    if settings.convert_background:
+        black_areas = (red == from_color[0]) & (blue == from_color[1]) & (green == from_color[2])
+        ssd_array[black_areas.T] = background_color
+
+    if settings.remove_grey_noise:
+        grey_areas = (red == blue) & (red == green) & (red < 255)
+        orange_areas = (red > green) & (green > blue)
+        red_areas = (red > 210) & (green == blue) & (red != green)
+        blue_areas = (blue > red) & (blue > green) & (blue != 255)  # do not remove the blue spee
+
+        ssd_array[grey_areas.T] = background_color
+        ssd_array[orange_areas.T] = (255, 212, 160)
+        ssd_array[red_areas.T] = (255, 0, 0)
+        ssd_array[blue_areas.T] = background_color
+
+    ssd = Image.fromarray(ssd_array)
 
     return ssd
 

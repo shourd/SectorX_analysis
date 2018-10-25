@@ -86,7 +86,11 @@ def ssd_trainer(all_data, participant_ids):
             print('Informedness: {}; MCC: {}'.format(informedness, MCC))
 
             self._data.append({
-                'iteration_name': settings.iteration_name,
+                'epoch': self.epoch_no,
+                # 'iteration_name': settings.iteration_name,
+                'participant': settings.current_participant,
+                'target_type': settings.target_type,
+                'experiment_name':settings.experiment_name,
                 'val_acc': logs.get('val_acc'),
                 'val_informedness': informedness,
                 'val_F1_score': F1_score,
@@ -167,13 +171,17 @@ def ssd_trainer(all_data, participant_ids):
 def prepare_training_set(ssd_data, command_data, participant_ids):
     """ FILTER COMMANDS """
     run_ids = 'all'  #['R1'] #'all'
-    if (settings.target_type == 'direction') or (settings.target_type == 'geometry'):
+    if settings.target_type == 'direction':
         command_types = ['HDG']
+    elif settings.target_type == 'geometry':
+        command_types = ['HDG', 'SPD']
+        command_data = command_data[command_data.preference != 'N/A']
     elif settings.target_type == 'relative_heading':
         command_types = ['HDG', 'DCT']
         command_data = command_data[command_data.hdg_rel != 'N/A']
     elif settings.target_type == 'command_type':
-        command_types = ['HDG', 'SPD']
+        command_types = ['HDG', 'SPD', 'DCT']
+        settings.num_classes =  len(command_types)
 
     command_data = command_data[command_data.ssd_id != 'N/A']
     command_data = command_data.reset_index().set_index('ssd_id').sort_index()
@@ -253,7 +261,7 @@ def create_model(iteration_name):
         print('Output directory created')
         makedirs(settings.output_dir + '/figures')
 
-    plot_model(model, to_file='{}/figures/structure_{}.png'.format(settings.output_dir, iteration_name), show_shapes=True, show_layer_names=False)
+    # plot_model(model, to_file='{}/figures/structure_{}.png'.format(settings.output_dir, iteration_name), show_shapes=True, show_layer_names=False)
 
     model.compile(loss=keras.losses.categorical_crossentropy,
                   optimizer=keras.optimizers.Adam(),

@@ -40,21 +40,24 @@ def main():
         settings.target_type = target_type
         settings.load_weights = False
 
-        for participant in settings.participants:
-            settings.current_participant = participant
-            print('------------------------------------------------')
-            print('-- Start training:', participant)
-            print('------------------------------------------------')
-            settings.iteration_name = '{}_{}_{}'.format(target_type, participant, settings.experiment_name)
-            participant_ids = [participant]
-            metrics_run = ssd_trainer(all_data, participant_ids)
-            # metrics_run.index.name = 'epoch'
-            if metrics_all.empty:
-                metrics_all = metrics_run
-            else:
-                metrics_all = metrics_all.append(metrics_run)
+        for i_repetition in range(settings.repetitions):
+            for participant in settings.participants:
+                settings.current_participant = participant
+                settings.current_repetition = i_repetition + 1
+                settings.iteration_name = '{}_{}_{}_rep{}'.format(target_type, participant, settings.experiment_name,
+                                                                  i_repetition + 1)
+                print('------------------------------------------------')
+                print('-- Start training:', settings.iteration_name)
+                print('------------------------------------------------')
 
-            metrics_all.to_csv(settings.output_dir + '/metrics_{}.csv'.format(settings.experiment_name))
+                participant_ids = [participant]
+                metrics_run = ssd_trainer(all_data, participant_ids)
+                if metrics_all.empty:
+                    metrics_all = metrics_run
+                else:
+                    metrics_all = metrics_all.append(metrics_run)
+
+                metrics_all.to_csv(settings.output_dir + '/metrics_{}.csv'.format(settings.experiment_name))
 
     plot_results(settings.experiment_name)
 

@@ -93,8 +93,11 @@ def make_categorical_list(command_data, target_type):
             res = command_rounded / heading_resolution
             target_list.append(res)
 
+        print('Total HDG commands: {}, divided into {} classes.'.format(len(target_list), settings.num_classes))
+
         sns.set()
         # sns.distplot(list(command_data.hdg_rel), bins=18)
-        # sns.distplot(list(abs(command_data.hdg_rel)), bins=18)
+        sns.distplot(list(abs(command_data.hdg_rel)), bins=settings.num_classes)
+        plt.savefig('{}/{}_dist_hdg.png'.format(settings.output_dir, settings.experiment_name), bbox_inches='tight')
 
     return target_list

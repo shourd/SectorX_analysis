@@ -1,54 +1,66 @@
-from config import settings
-import seaborn as sns
-import pandas as pd
 import matplotlib.pyplot as plt
-import itertools
+import numpy as np
+import pandas as pd
+import seaborn as sns
+
+from config import settings
+
 sns.set()
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 
 def plot_results(experiment_name):
-
     results = pd.read_csv(settings.output_dir + '/metrics_{}.csv'.format(experiment_name)).reset_index()
 
-    """ SPLIT ITERATION NAME : CAN BE REMOVED IN NEXT RUN """
-    participant_list = []
-    target_type_list = []
-    for iteration in list(results.iteration_name):
-        try:
-            target_type, p_no, _, _ = iteration.split('_')
-        except ValueError:
-            part1, part2, p_no, _, _ = iteration.split('_')
-            target_type = part1 + '_' + part2
+    participant_list = list(results.participant.unique())
+    target_type_list = list(results.target_type.unique())
 
-        participant_list.append(p_no)
-        target_type_list.append(target_type)
+    max_df = pd.DataFrame()
+    for participant_id in np.unique(participant_list):
+        for target_type in np.unique(target_type_list):
+            results_temp = results[results.participant == participant_id]
+            results_temp = results_temp[results_temp.target_type == target_type]
 
-    # results.iteration_name = participant_list
-    results['participant'] = participant_list
-    results['target_type'] = target_type_list
+            max_dict = {
+                'participant': [participant_id],
+                'target_type': [target_type],
+                'ssd': ['all'],
+                'mcc_max': round(results_temp.MCC.max(),2),
+                'acc_max': round(results_temp.val_acc.max(),2),
+                'f1_score_max': round(results_temp.val_F1_score.max(),2),
+                'informedness_max': round(results_temp.val_informedness.max(),2)
+            }
 
+            max_df_temp = pd.DataFrame.from_dict(max_dict)
 
+            if max_df.empty:
+                max_df = max_df_temp
+            else:
+                max_df = max_df.append(max_df_temp)
 
-    # print('Max MCC: ',round(results.MCC.max(),2))
-    # print('Max val_acc: ',round(results.val_acc.max(),2))
-    # print('Max F1 score: ',round(results.val_F1_score.max(),2))
-    # print('Max informedness: ',round(results.val_informedness.max(),2))
+    print(max_df.to_string())
 
-    # results.rename(columns={'iteration_name': 'Iteration name'}, inplace=True)
+    metric_list = ['mcc', 'acc', 'f1_score', 'informedness']
 
-    # palette = itertools.cycle(sns.color_palette())
+    fig, (ax_vars) = plt.subplots(1, 4, figsize=settings.figsize4)
+    for i_metric, metric in enumerate(metric_list):
+        metric = metric + '_max'
+        sns.boxplot(x='target_type', y=metric, data=max_df, ax=ax_vars[i_metric])
+        ax_vars[i_metric].set_ylim([0, 1])
+
+    plt.savefig('{}/{}_max.png'.format(settings.output_dir, experiment_name), bbox_inches='tight')
+    print('Boxplots saved')
+    # todo: HUE SSD !
+
 
     """ SORTED PER PARTICIPANT """
-    g = sns.FacetGrid(results, col="participant", col_wrap=3, palette='GnBu_d')
-    g.map(sns.lineplot, "epoch", "MCC", "target_type")
-    plt.suptitle('Matthews Correlation Coefficient')
-    g.fig.subplots_adjust(top=.9)
-    plt.savefig('{}/{}_MCC.png'.format(settings.output_dir, experiment_name), bbox_inches='tight')
-
-    g = sns.FacetGrid(results, col="participant", col_wrap=3, palette='GnBu_d')
-    g.map(sns.lineplot, "epoch", "val_acc", "target_type")
-    plt.suptitle('Validation Accuracy')
-    g.fig.subplots_adjust(top=.9)
-    plt.savefig('{}/{}_ACC.png'.format(settings.output_dir, experiment_name), bbox_inches='tight')
+    for metric in ['MCC', 'val_acc']:
+        g = sns.relplot(x='epoch', y=metric, hue='target_type', col='participant', col_wrap=3, kind='line', data=results)
+        # g.fig.subplots_adjust(top=.9)
+        plt.savefig('{}/{}_{}.png'.format(settings.output_dir, experiment_name, metric), bbox_inches='tight')
+        plt.close()
+        print('{} values saved'.format(metric))
 
     # fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=settings.figsize4)
 
@@ -99,12 +111,7 @@ def plot_results(experiment_name):
     # ax4.set_ylabel('F1 score')
     # plt.savefig('{}/{}_t.png'.format(settings.output_dir, experiment_name), bbox_inches='tight')
 
-
-    """ FACETPLOT """
-
-
-
 if __name__ == '__main__':
-    experiment_name = 'full_experiment'
+    experiment_name = 'full_experiment_test'
     plot_results(experiment_name)
     # plot_results(settings.experiment_name)

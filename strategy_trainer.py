@@ -53,7 +53,6 @@ def ssd_trainer(all_data, participant_ids):
             self.acc.append(logs.get('acc'))
             # classification_metrics(model, x_val, y_val)
 
-
     history = AccuracyHistory()
 
     # TENSORBOARD
@@ -72,9 +71,10 @@ def ssd_trainer(all_data, participant_ids):
     # CSV Outputs
     csv_logger = CSVLogger(settings.output_dir + '/log_{}.csv'.format(settings.iteration_name), append=True, separator=',')
 
-
     # Classification metrics
     class Metrics(keras.callbacks.Callback):
+        _data = []
+        epoch_no = 0
         def on_train_begin(self, logs={}):
             self._data = []
             self.epoch_no = 1
@@ -91,10 +91,13 @@ def ssd_trainer(all_data, participant_ids):
                 'participant': settings.current_participant,
                 'target_type': settings.target_type,
                 'experiment_name':settings.experiment_name,
+                'repetition': settings.current_repetition,
                 'val_acc': logs.get('val_acc'),
                 'val_informedness': informedness,
                 'val_F1_score': F1_score,
-                'MCC': MCC
+                'MCC': MCC,
+                'SSD': settings.ssd,
+                'skill_level': settings.determine_skill_level()
             })
 
             self.epoch_no += 1
@@ -163,7 +166,7 @@ def ssd_trainer(all_data, participant_ids):
 
     confusion_metrics_dict = confusion_metrics.get_data()
     confusion_metrics_df = pd.DataFrame.from_dict(confusion_metrics_dict)
-    print(confusion_metrics_df)
+    # print(confusion_metrics_df)
 
     return confusion_metrics_df
 
@@ -186,7 +189,6 @@ def prepare_training_set(ssd_data, command_data, participant_ids):
     command_data = command_data[command_data.ssd_id != 'N/A']
     command_data = command_data.reset_index().set_index('ssd_id').sort_index()
 
-
     # ssd = 100
     # show_ssd(ssd_id=ssd, ssd_stack=ssd_data)
     # print(command_data.loc[ssd])
@@ -199,7 +201,6 @@ def prepare_training_set(ssd_data, command_data, participant_ids):
         command_data = command_data[command_data.type.isin(command_types)]
     if settings.ssd == 'ON' or settings.ssd == 'OFF':
         command_data = command_data[command_data.SSD == settings.ssd]
-
 
     # filter ssds based on remaining actions
     actions_ids = command_data.index.unique()
@@ -235,13 +236,20 @@ def create_model(iteration_name):
     model.add(Conv2D(32, kernel_size=(2, 2), strides=(1, 1)))
     convout = Activation('relu')
     model.add(convout)
-    # model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+
     model.add(Conv2D(32, kernel_size=(2, 2), strides=(1, 1)))
+
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Conv2D(64, kernel_size=(2, 2), strides=(1, 1), activation='relu'))
+
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Conv2D(32, kernel_size=(2, 2), strides=(1, 1), activation='relu'))
 
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    # TODO: check if last pooling layer and Dense 512 instead of 1024 do not affect performance too much
     # Flattening and FC
     model.add(Flatten())
     model.add(Dense(1024, activation='relu'))
@@ -261,7 +269,8 @@ def create_model(iteration_name):
         print('Output directory created')
         makedirs(settings.output_dir + '/figures')
 
-    # plot_model(model, to_file='{}/figures/structure_{}.png'.format(settings.output_dir, iteration_name), show_shapes=True, show_layer_names=False)
+    if settings.save_model_structure:
+        plot_model(model, to_file='{}/figures/structure_{}.png'.format(settings.output_dir, iteration_name), show_shapes=True, show_layer_names=False)
 
     model.compile(loss=keras.losses.categorical_crossentropy,
                   optimizer=keras.optimizers.Adam(),
@@ -382,6 +391,5 @@ if __name__ == "__main__":
     ssd_trainer(all_data, participant_ids=['all'])
 
     # TODO: color channels
-    # TODO: add secondary commands
     # TODO: vary over number of locked layers with transfer learning
-    # bulid a numerical approximator instead of class approximator
+    # TODO: bulid a numerical approximator instead of class approximator for rel. heading

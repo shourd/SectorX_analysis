@@ -1,10 +1,12 @@
 """ Taken from: http://scikit-learn.org/stable/auto_examples/model_selection/get_confusion_metrics.html """
-from config import settings
 import itertools
-import numpy as np
-import matplotlib.pyplot as plt
 
-from sklearn.metrics import confusion_matrix, classification_report, matthews_corrcoef, f1_score, balanced_accuracy_score
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.metrics import confusion_matrix, classification_report, matthews_corrcoef, f1_score, \
+    balanced_accuracy_score
+
+from config import settings
 
 
 def get_confusion_metrics(y_test, y_pred, epoch_no=0,
@@ -44,7 +46,7 @@ def get_confusion_metrics(y_test, y_pred, epoch_no=0,
     informedness = round(balanced_accuracy_score(y_test, y_pred, adjusted=True), 3)
     # http: // scikit - learn.org / stable / modules / model_evaluation.html
 
-    if epoch_no == 15:
+    if epoch_no == settings.epochs:
         plt.figure()
         plt.imshow(cm, interpolation='nearest', cmap=cmap)
         plt.title(title)

@@ -6,7 +6,7 @@ class Settings:
     ssd_folder = 'data/all_ssd'
     output_dir = 'output'
     serialized_data_filename = "serialized_data.p"
-    input_file = 'all_dataframes_3.p'
+    input_file = 'all_dataframes_3_nonoise.p'
 
     # SERIALIZE AND PROCESS SETTINGS
     caution_time = 120          # orange conflict
@@ -22,21 +22,21 @@ class Settings:
     figsize4 = (20, 5)
 
     # SSD IMPORT SETTINGS
-    convert_to_greyscale = False
     convert_background = True
     remove_grey_noise = True
     rotate_upwards = True  # rotates the speedvector towards the north
-    crop_top = True  # only possible when rotated upwards
-    save_png_files = True
+    crop_top = False  # only possible when rotated upwards
+    convert_to_greyscale = False
     ssd_import_size = (128, 128)
+    save_png_files = True
     ignore_PRV = True
+    export_file = 'all_dataframes_3_blackssd'
 
 
     # CNN TRAIN SETTINGS
-    experiment_name = 'test2'
+    experiment_name = 'input_baseline'
     repetitions = 5
-    participants = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10', 'all']
-    participants = ['all']
+    participants = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10', 'P11','all']
     ssd = 'all' #'ON'  # 'OFF' , 'all'
     target_types = ['geometry', 'type', 'direction', 'value']
     load_weights = False # 'direction_all_full_experiment_pooling_rep15'
@@ -83,10 +83,6 @@ class Settings:
             self.skill_level = 'all'
 
         return self.skill_level
-
-    # def determine_steps_per_epoch(self):
-    #     self.steps_per_epoch = self.num_samples / self.batch_size
-    #     return self.steps_per_epoch
 
 
 global settings

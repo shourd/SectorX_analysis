@@ -3,6 +3,7 @@ import pickle
 import numpy as np
 from scipy import stats
 import pandas as pd
+import seaborn as sns
 
 def calc_consistency_metric():
     all_data = pickle.load(open(settings.data_folder + settings.input_file, "rb"))
@@ -14,9 +15,9 @@ def calc_consistency_metric():
 
     consistency_list = []
     consistency_df = pd.DataFrame()
-    for participant in settings.columns:
+    for participant in range(1,13):
 
-        commands_p = commands_df[commands_df.participant_id == participant]
+        commands_p = commands_df[commands_df.participant_id == 'P{}'.format(participant)]
         if commands_p.empty:
             continue
 
@@ -47,23 +48,20 @@ def calc_consistency_metric():
         variance_fraction = total_variance / variance
         unique_fraction = total_unique / unique
 
-        w1 = 0.5
-        w2 = 0.5
-
-        value_consistency = round((w1 * variance_fraction + w2 * unique_fraction)/3, 2)
+        value_consistency = round((variance_fraction + unique_fraction)/3, 2)
 
         """ WEIGHTED TOTAL """
         total_consistency = round((type_consistency + direction_consistency + value_consistency) / 3, 2)
         consistency_list.append(total_consistency)
 
         dict = {
-            'Participant': [participant],
-            'Type': [type_consistency],
-            'Direction': [direction_consistency],
-            'Value': [value_consistency],
-            'Value (variance)': [variance_fraction],
-            'Value (unique)': [unique_fraction],
-            'Final': [total_consistency]
+            'participant': [participant],
+            'type_consistency': [type_consistency],
+            'direction_consistency': [direction_consistency],
+            'value_consistency': [value_consistency],
+            'value_consistency_var': [variance_fraction],
+            'value_consistency_uni': [unique_fraction],
+            'final_consistency': [total_consistency]
         }
 
         run_df = pd.DataFrame.from_dict(dict, orient='columns')
@@ -74,11 +72,11 @@ def calc_consistency_metric():
             consistency_df = consistency_df.append(run_df)
 
         print('--------------------------')
-        print('Participant: {}'.format(participant))
-        print('Type: ', type_consistency)
-        print('Direction: ', direction_consistency)
-        print('Value: ', value_consistency)
-        print('Final consistency: ', total_consistency)
+        print('participant: {}'.format(participant))
+        print('type: ', type_consistency)
+        print('direction: ', direction_consistency)
+        print('value: ', value_consistency)
+        print('final consistency: ', total_consistency)
 
 
     consistency_array = np.array(consistency_list)
@@ -88,6 +86,9 @@ def calc_consistency_metric():
     print('Average consistency: ', round(np.array(consistency_list).mean(), 2))
 
     consistency_df.to_csv(settings.output_dir + '/consistency_metrics.csv')
+
+    """ PLOTTING """
+    g = sns.catplot(data=consistency_df, x='participant', y='final_consistency', kind='bar', palette='muted')
 
 def normalize_consistency(x, y):
     total = x + y

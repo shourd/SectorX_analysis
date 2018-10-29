@@ -22,7 +22,7 @@ def get_confusion_metrics(y_test, y_pred, epoch_no=0,
 
 
     cm = confusion_matrix(y_test, y_pred)
-    report = classification_report(y_test, y_pred, [0, 1], settings.class_names)
+    # report = classification_report(y_test, y_pred, [0, 1], settings.class_names)
 
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]

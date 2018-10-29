@@ -31,8 +31,6 @@ def ssd_loader(dataframes=None):
     filelist.sort()
     print('Number of SSDs:', len(filelist))
 
-    # actions = pd.DataFrame(columns=['PARTICIPANT_ID', 'RUN_ID', 'TIME', 'ACID', 'TYPE', 'VALUE'])
-
     ssd_stack = []
     ssd_id = 0
     for i_file, filename in enumerate(filelist):
@@ -78,7 +76,7 @@ def ssd_loader(dataframes=None):
     dataframes['commands'] = df_commands
     dataframes['ssd_images'] = ssd_stack
 
-    pickle.dump(dataframes, open(settings.data_folder + 'all_dataframes_3.p', "wb"))
+    pickle.dump(dataframes, open(settings.data_folder + settings.export_file + '.p', "wb"))
     print('-----------------------------------------------------------------')
     print('{} SDDs saved to pickle.'.format(len(ssd_stack)))
     print('{} SSDs filtered out'.format(i_file - ssd_id))
@@ -126,8 +124,6 @@ def edit_ssd(ssd, command, df_traffic):
         ssd = rotate_ssd(ssd, command, df_traffic)  # point speed vector up.
         if settings.crop_top:
             crop_fraction = 0.5
-            current_height = ssd.height
-            current_width = ssd.width
             ssd = ssd.crop(box=(0, 0, ssd.width, ssd.height*crop_fraction))
 
     if settings.convert_background or settings.remove_grey_noise:
@@ -150,28 +146,29 @@ def transform_colors(ssd):
     :return: ssd PIL Image with transformed colors
     """
 
-    # from_color = (0, 0, 0)
-    # background_color = (255, 255, 255)
     from_color = (255, 255, 255)
-    background_color = (0, 0, 0)
+    if settings.convert_background:
+        new_background_color = (0, 0, 0)
+    else:
+        new_background_color = (255, 255, 255)
 
     ssd_array = np.array(ssd)  # "data" is a height x width x R x G x B array
-    red, green, blue = ssd_array.T
+    red, green, blue = ssd_array.T # new format: RGB x HW
 
     if settings.convert_background:
-        black_areas = (red == from_color[0]) & (blue == from_color[1]) & (green == from_color[2])
-        ssd_array[black_areas.T] = background_color
+        white_areas = (red == from_color[0]) & (blue == from_color[1]) & (green == from_color[2])
+        ssd_array[white_areas.T] = new_background_color
 
     if settings.remove_grey_noise:
-        grey_areas = (red == blue) & (red == green) & (red < 255)
+        grey_areas = (red == blue) & (red == green) & (red < 255) & (red > 0)
         orange_areas = (red > green) & (green > blue)
         red_areas = (red > 210) & (green == blue) & (red != green)
         blue_areas = (blue > red) & (blue > green) & (blue != 255)  # do not remove the blue spee
 
-        ssd_array[grey_areas.T] = background_color
+        ssd_array[grey_areas.T] = new_background_color
         ssd_array[orange_areas.T] = (255, 212, 160)
         ssd_array[red_areas.T] = (255, 0, 0)
-        ssd_array[blue_areas.T] = background_color
+        ssd_array[blue_areas.T] = new_background_color
 
     ssd = Image.fromarray(ssd_array)
 

@@ -1,15 +1,16 @@
-from config import settings
-import seaborn as sns
-import pandas as pd
-import matplotlib.pyplot as plt
-import config
-import pickle
 import os
+import pickle
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+
+import config
+from config import settings
 
 
 def plot_commands(all_dataframes):
     # TODO: EFFECT SSD ON CONSISTENCY
-    # plot settings
     sns.set()
     sns.set_context("notebook")   # smaller: paper
 

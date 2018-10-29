@@ -83,7 +83,13 @@ def ssd_trainer(all_data, participant_ids):
             y_pred = model.predict_classes(x_val)
             y_true = np.argmax(y_val, axis=1)
             informedness, F1_score, MCC = get_confusion_metrics(y_true, y_pred, self.epoch_no)
+            val_acc = logs.get('val_acc')
             print('Informedness: {}; MCC: {}'.format(informedness, MCC))
+
+            # todo: check if this is ok.
+            if (MCC == 0.0) & (val_acc > 0.99):
+                MCC = 1
+                informedness = 1
 
             self._data.append({
                 'epoch': self.epoch_no,
@@ -92,7 +98,7 @@ def ssd_trainer(all_data, participant_ids):
                 'target_type': settings.target_type,
                 'experiment_name':settings.experiment_name,
                 'repetition': settings.current_repetition,
-                'val_acc': logs.get('val_acc'),
+                'val_acc': val_acc,
                 'val_informedness': informedness,
                 'val_F1_score': F1_score,
                 'MCC': MCC,
@@ -146,7 +152,7 @@ def ssd_trainer(all_data, participant_ids):
     # start training
     model.fit_generator(
         train_generator,
-        steps_per_epoch=settings.steps_per_epoch,  # len(x_train) / settings.batch_size,
+        steps_per_epoch=len(x_train) / settings.batch_size,
         epochs=settings.epochs,
         verbose=1,
         validation_data=(x_val, y_val),
@@ -158,8 +164,6 @@ def ssd_trainer(all_data, participant_ids):
     # test_loss = round(score[0], 3)
     test_accuracy = round(score[1], 3)
     train_time = int(time.time() - start_time)
-
-    # print('Test accuracy:', test_accuracy)
     print('Train time: {} min'.format(round(train_time/60),1))
 
     # visualize_layer(x_train, model, layer)
@@ -179,10 +183,10 @@ def prepare_training_set(ssd_data, command_data, participant_ids):
     elif settings.target_type == 'geometry':
         command_types = ['HDG', 'SPD']
         command_data = command_data[command_data.preference != 'N/A']
-    elif settings.target_type == 'relative_heading':
+    elif settings.target_type == 'value':
         command_types = ['HDG', 'DCT']
         command_data = command_data[command_data.hdg_rel != 'N/A']
-    elif settings.target_type == 'command_type':
+    elif settings.target_type == 'type':
         command_types = ['HDG', 'SPD', 'DCT']
         settings.num_classes =  len(command_types)
 
@@ -236,20 +240,16 @@ def create_model(iteration_name):
     model.add(Conv2D(32, kernel_size=(2, 2), strides=(1, 1)))
     convout = Activation('relu')
     model.add(convout)
-
     model.add(MaxPooling2D(pool_size=(2, 2)))
 
-    model.add(Conv2D(32, kernel_size=(2, 2), strides=(1, 1)))
-
-    model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Conv2D(64, kernel_size=(2, 2), strides=(1, 1), activation='relu'))
-
     model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    model.add(Conv2D(32, kernel_size=(2, 2), strides=(1, 1), activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+
     model.add(Conv2D(32, kernel_size=(2, 2), strides=(1, 1), activation='relu'))
 
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-
-    # TODO: check if last pooling layer and Dense 512 instead of 1024 do not affect performance too much
     # Flattening and FC
     model.add(Flatten())
     model.add(Dense(1024, activation='relu'))
@@ -270,7 +270,7 @@ def create_model(iteration_name):
         makedirs(settings.output_dir + '/figures')
 
     if settings.save_model_structure:
-        plot_model(model, to_file='{}/figures/structure_{}.png'.format(settings.output_dir, iteration_name), show_shapes=True, show_layer_names=False)
+        plot_model(model, to_file='{}/figures/structure_{}.png'.format(settings.output_dir, settings.experiment_name), show_shapes=True, show_layer_names=False)
 
     model.compile(loss=keras.losses.categorical_crossentropy,
                   optimizer=keras.optimizers.Adam(),

@@ -30,9 +30,8 @@ def create_dataframes(participant_list=None):
 
     copx_list = obtain_copx_list(participant_list)
 
-    participants = []
     for i_participant, participant in enumerate(participant_list):
-        runs = []
+
         for i_run, run in enumerate(participant.runs):
 
             participant_id = participant_list[i_participant].name
@@ -128,9 +127,6 @@ def create_dataframes(participant_list=None):
 
             df_commands = pd.concat([df_commands, temp_command_list])
 
-            # runs.append(run)
-        # participants.append(runs)
-
     """ Create indeces for dataframes """
     participant_ids = list(df_traffic.participant_id.unique())
     run_ids = list(df_traffic.run_id.unique())
@@ -156,7 +152,6 @@ def create_dataframes(participant_list=None):
         "runs": run_ids,
         "sector_points": sector_points}
 
-    # pickle.dump(participants, open(settings.data_folder + settings.processed_data_filename, "wb"))
     pickle.dump(all_dataframes, open(settings.data_folder + 'all_dataframes_1.p', "wb"))
     print('Processed data saved to pickle')
 
@@ -192,10 +187,6 @@ def analyse_conflicts(participants):
             # print('Percentage of time in conflict: ', round(len(conflicts) / i_logpoint, 2))
 
 
-
-
-
-
 def analyse_commands(all_dataframes=None):
     """ COMMAND ANALYSIS
     :type all_dataframes: dict
@@ -207,7 +198,6 @@ def analyse_commands(all_dataframes=None):
     df_traffic = all_dataframes['traffic']
     df_commands = all_dataframes['commands']
 
-    """ TODO: MATRIX MANIPULATION ON ENTIRE DATA FRAME TO CALCULATE HDG TO COPX FROM CURRENT POS. """
     df_traffic = add_copx_heading_column(df_traffic)
 
     for participant_id in all_dataframes['participants']:
@@ -367,15 +357,6 @@ def initialize_command_dataframe(only_columns=False):
         index = pd.MultiIndex.from_product(iterables, names=['participant', 'SSD'])
         command_list = pd.DataFrame(columns=columns, index=index)
 
-    # command_list = command_list.astype(dtype=
-    #                                    {'run': 'int',
-    #                                     'scenario': 'object',
-    #                                     'timestamp': 'float',
-    #                                     'type': 'object',
-    #                                     'value': 'int',
-    #                                     'ACID': 'object',
-    #                                     'timestamp_traffic': 'float'})
-
     return command_list
 
 
@@ -385,10 +366,7 @@ def initialize_traffic_dataframe():
                'i_logpoint', 'timestamp',
                'ACID', 'conflict', 'controlled', 'hdg_deg',
                'selected', 'spd_kts', 'x_nm', 'y_nm', 'copx_x_nm', 'copx_y_nm']
-    # columns = ['participant_id', 'SSD', 'run_id',
-    #            'i_logpoint', 'timestamp',
-    #            'ACID', 'conflict', 'controlled', 'hdg_deg',
-    #            'selected', 'spd_kts', 'x_nm', 'y_nm']
+
     command_list = pd.DataFrame(columns=columns)
 
     return command_list
@@ -456,14 +434,14 @@ def load_from_pickle(filename):
 
 if __name__ == "__main__":
 
-    try:
-        # participants = pickle.load(open(settings.data_folder + settings.processed_data_filename, "rb"))
-        all_data = pickle.load(open(settings.data_folder + 'all_dataframes_1.p', "rb"))
-        print('Data loaded from Pickle')
-    except FileNotFoundError:
-        print('Start loading data.')
-        all_data = create_dataframes()  # generates all_dataframes_1.p
-        print('Dataframes created and saved to Pickle')
+    # try:
+    #     # participants = pickle.load(open(settings.data_folder + settings.processed_data_filename, "rb"))
+    #     all_data = pickle.load(open(settings.data_folder + 'all_dataframes_1.p', "rb"))
+    #     print('Data loaded from Pickle')
+    # except FileNotFoundError:
+    print('Start loading data.')
+    all_data = create_dataframes()  # generates all_dataframes_1.p
+    print('Dataframes created and saved to Pickle')
 
     all_data = analyse_commands(all_data)  # generates all_dataframes_2.p
     print('Commands analyzed and saved to Pickle')

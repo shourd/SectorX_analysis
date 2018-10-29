@@ -1,9 +1,10 @@
 import os
-import xml.etree.ElementTree as ET
 import pickle
 import re
-from toolset.data_objects import Participant, Run, Command
+import xml.etree.ElementTree as ET
+
 from config import settings
+from toolset.data_objects import Participant, Run, Command
 
 
 def serialize_data():

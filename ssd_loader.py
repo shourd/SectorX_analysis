@@ -1,10 +1,10 @@
-from config import settings
 import os
-import numpy as np
-from config import settings
-from PIL import Image
-import pandas as pd
 import pickle
+
+import numpy as np
+from PIL import Image
+
+from config import settings
 
 
 class Command:
@@ -78,7 +78,7 @@ def ssd_loader(dataframes=None):
     dataframes['commands'] = df_commands
     dataframes['ssd_images'] = ssd_stack
 
-    pickle.dump(dataframes, open(settings.data_folder + 'all_dataframes_3_test.p', "wb"))
+    pickle.dump(dataframes, open(settings.data_folder + 'all_dataframes_3.p', "wb"))
     print('-----------------------------------------------------------------')
     print('{} SDDs saved to pickle.'.format(len(ssd_stack)))
     print('{} SSDs filtered out'.format(i_file - ssd_id))

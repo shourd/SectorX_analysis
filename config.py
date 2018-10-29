@@ -33,21 +33,17 @@ class Settings:
 
 
     # CNN TRAIN SETTINGS
-    experiment_name = 'test'
-    # participants = ['all']
-    # participants = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10', 'all']
-    repetitions = 9
+    experiment_name = 'test2'
+    repetitions = 5
     participants = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10', 'all']
+    participants = ['all']
     ssd = 'all' #'ON'  # 'OFF' , 'all'
-    target_types = ['geometry', 'command_type', 'direction', 'relative_heading']
-    load_weights = False  #'relative_heading_all_weight_init'
+    target_types = ['geometry', 'type', 'direction', 'value']
+    load_weights = False # 'direction_all_full_experiment_pooling_rep15'
     train_val_ratio = 0.75
-    epochs = 60
-    number_samples = 100
-    batch_size = 16 #128  # 128
-    steps_per_epoch = 4 #number_samples / batch_size  #888 / 128
+    epochs = 15
+    batch_size = 32
     rotation_range = 0  # the maximum degree of random rotation for data augmentation
-    # num_classes = 2  # amount of resolution classes (2, 4, 6, or 12)
     save_model = False  # save model weights to disk
     save_model_structure = True  # save png of model structure to disk
     freeze_layers = False
@@ -61,6 +57,7 @@ class Settings:
     class_names = []
     num_classes = 2
     skill_level = 'N/A'
+    # steps_per_epoch = 0
 
     def __init__(self):
         width = self.ssd_import_size[0]
@@ -83,9 +80,13 @@ class Settings:
         elif participant in ['P7', 'P8', 'P9', 'P10', 'P11', 'P12']:
             self.skill_level = 'intermediate'
         else:
-            self.skill_level = 'N/A'
+            self.skill_level = 'all'
 
         return self.skill_level
+
+    # def determine_steps_per_epoch(self):
+    #     self.steps_per_epoch = self.num_samples / self.batch_size
+    #     return self.steps_per_epoch
 
 
 global settings

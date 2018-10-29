@@ -1,22 +1,24 @@
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 from config import settings
 from plot_data import custom_round
-import seaborn as sns
-import matplotlib.pyplot as plt
+
 
 def make_categorical_list(command_data, target_type):
     """
     :param command_data:
     :param target_type: type can be:
-        1. command_type
+        1. type (spd, hdg, dct)
         2. direction (left/right)
         3. geometry
-        4. relative_heading
+        4. value (only hdg)
     :return: target_list
     """
     target_list = []
 
     """ COMMAND TYPE """
-    if target_type is 'command_type':
+    if target_type is 'type':
         settings.class_names = ['HDG', 'SPD', 'DCT']
         for command in list(command_data.type):
             if command == 'HDG': res = 0
@@ -74,30 +76,31 @@ def make_categorical_list(command_data, target_type):
         print('In front: {} ({}%)'.format(number_infront, round(100 * number_infront / total), 0))
         print('Behind: {} ({}%)'.format(number_behind, round(100 * number_behind / total), 0))
 
-    elif target_type is 'relative_heading':
+    elif target_type is 'value':
 
-        # command_data[command_data.hdg_rel > 90]
+        print('Samples in dataset:', len(command_data))
+        # sns.set()
+        # sns.distplot(list(abs(command_data.hdg_rel)), bins=18)
+        # plt.savefig('{}/{}_dist.png'.format(settings.output_dir, settings.iteration_name), bbox_inches='tight')
+        # plt.close()
 
-        heading_cap = 60
-        heading_resolution = 30  #deg
-        settings.num_classes = int(heading_cap / heading_resolution + 1)
-        settings.class_names = []
-        for class_number in range(settings.num_classes):
-            class_name = str(int(class_number * heading_resolution)) + ' deg'
-            settings.class_names.append(class_name)
+        settings.class_names = ['0-10 deg', '10-45 deg', '> 45 deg']
+        settings.num_classes = 3
+        line1 = 10
+        line2 = 45
 
         for command in list(command_data.hdg_rel):
-            command_rounded = abs(custom_round(command, heading_resolution))
-            if command_rounded > heading_cap: command_rounded = heading_cap
+            if command < line1:
+                res = 0
+            elif line1 < command < line2:
+                res = 1
+            elif command > line2:
+                res = 2
 
-            res = command_rounded / heading_resolution
             target_list.append(res)
 
         print('Total HDG commands: {}, divided into {} classes.'.format(len(target_list), settings.num_classes))
 
-        sns.set()
-        # sns.distplot(list(command_data.hdg_rel), bins=18)
-        sns.distplot(list(abs(command_data.hdg_rel)), bins=settings.num_classes)
-        plt.savefig('{}/{}_dist_hdg.png'.format(settings.output_dir, settings.experiment_name), bbox_inches='tight')
+
 
     return target_list

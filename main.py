@@ -1,12 +1,16 @@
+import pickle
+import time
+
+import pandas as pd
+
 from config import settings
+from plot_data import plot_commands
+from plot_results import plot_results
+from process_data import create_dataframes, analyse_commands
 from serialize_data import serialize_data
-from process_data import create_dataframes, analyse_commands, analyse_conflicts
-from plot_data import plot_commands, plot_traffic
 from ssd_loader import ssd_loader
 from strategy_trainer import ssd_trainer
-import pickle
-import pandas as pd
-from plot_results import plot_results
+
 
 def main():
 
@@ -35,6 +39,8 @@ def main():
 
     print('Start training the neural network')
 
+    # measure training time
+    start_time = time.time()
     metrics_all = pd.DataFrame()
     for target_type in settings.target_types:
         settings.target_type = target_type
@@ -59,6 +65,7 @@ def main():
 
                 metrics_all.to_csv(settings.output_dir + '/metrics_{}.csv'.format(settings.experiment_name))
 
+    print('Train time: {} min'.format(round(int(time.time() - start_time) / 60), 1))
     plot_results(settings.experiment_name)
 
 if __name__ == "__main__":

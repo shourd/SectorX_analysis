@@ -23,10 +23,11 @@ def plot_results(experiment_name):
 
     """ CALCULATE RUN PERFORMANCE """
     # calculate performance metric
-    results['performance'] = (results.MCC + results.val_F1_score + results.val_acc + results.val_informedness)/4
-    performance_matrix = sort_dataframe(results.groupby(['participant', 'target_type']).performance.agg('max').unstack().reset_index())
-    performance_matrix['average_performance'] = performance_matrix.loc[:, target_type_order].mean(axis=1)
-    performance_matrix.to_csv(settings.output_dir + '/performance_metrics.csv')
+    # results['performance'] = (results.MCC + results.val_F1_score + results.val_acc + results.val_informedness)/4
+    performance_matrix = sort_dataframe(results.groupby(['participant', 'target_type']).MCC.agg('max').unstack().reset_index())
+    performance_matrix['average_MCC'] = performance_matrix.loc[:, target_type_order].mean(axis=1)
+    performance_matrix.to_csv('{}/performance_metrics.csv'.format(settings.output_dir))
+    # print('Performance metrics saved')
 
     results_target_type = results.groupby(['participant', 'target_type']).agg('max').reset_index()
     results_repetition = sort_dataframe(results.groupby(['participant', 'target_type', 'repetition']).agg('max').reset_index())
@@ -52,49 +53,49 @@ def plot_results(experiment_name):
     makedirs(settings.output_dir, exist_ok=True)
 
     # Performance per participant
-    g = sns.catplot(x='participant', y='performance', kind='box', palette='muted', data=results_target_type)
+    g = sns.catplot(x='participant', y='MCC', kind='box', palette='muted', data=results_target_type)
     plt.ylim([0, 1.1])
+    plt.savefig('{}/{}_participant.png'.format(settings.output_dir, experiment_name), bbox_inches='tight')
+    plt.close()
 
     # performance per skill level
-    g = sns.catplot(x='skill_level', y='performance', kind='box', hue='SSD', palette='muted', data=results_target_type)
+    g = sns.catplot(x='skill_level', y='MCC', kind='box', hue='SSD', palette='muted', data=results_target_type)
     plt.ylim([0, 1.1])
-
-    g = sns.catplot(x='target_type', y='performance', kind='box', hue='SSD', palette='muted', data=results_target_type)
-    plt.ylim([0, 1.1])
-
-    # performance per target type per validation metric
-    fig, (ax_vars) = plt.subplots(1, 4, figsize=settings.figsize4)
-    for i_metric, metric in enumerate(metric_list):
-        sns.boxplot(x='target_type', y=metric, data=results_target_type, hue='SSD', order=target_type_order, ax=ax_vars[i_metric])
-        ax_vars[i_metric].set_ylim([-0.1, 1.1])
-        # hue='skill_level'
-
-    plt.savefig('{}/{}_comb.png'.format(settings.output_dir, experiment_name), bbox_inches='tight')
+    plt.savefig('{}/{}_skilllevel.png'.format(settings.output_dir, experiment_name), bbox_inches='tight')
     plt.close()
-    print('Boxplots saved')
 
-    # # this boxplot plots all metrics at all epochs.
-    # g = sns.catplot(x='target_type', y='MCC', hue='skill_level', col='participant', col_wrap=3, kind='box', data=results,
-    #                 order=target_type_order, height=3, aspect=1)
-    # plt.suptitle('All epochs')
-    # plt.savefig('{}/{}_{}.png'.format(settings.output_dir, experiment_name, 'catplot'), bbox_inches='tight')
+    # performance per target type
+    g = sns.catplot(x='target_type', y='MCC', kind='box', hue='SSD', palette='muted', data=results_target_type)
+    plt.ylim([0, 1.1])
+    plt.savefig('{}/{}_targettype.png'.format(settings.output_dir, experiment_name), bbox_inches='tight')
+    plt.close()
+
+    # # performance per target type per validation metric
+    # fig, (ax_vars) = plt.subplots(1, 4, figsize=settings.figsize4)
+    # for i_metric, metric in enumerate(metric_list):
+    #     sns.boxplot(x='target_type', y=metric, data=results_target_type, hue='SSD', order=target_type_order, ax=ax_vars[i_metric])
+    #     ax_vars[i_metric].set_ylim([-0.1, 1.1])
+    #     # hue='skill_level'
+    #
+    # plt.savefig('{}/{}_allmetrics.png'.format(settings.output_dir, experiment_name), bbox_inches='tight')
     # plt.close()
+    # print('Boxplots saved')
 
     # MCC per participant per target type
-    g = sns.catplot(x='target_type', y='performance', hue='SSD', col='participant', col_wrap=3, kind='box', data=results_repetition,
+    g = sns.catplot(x='target_type', y='MCC', hue='SSD', col='participant', col_wrap=3, kind='box', data=results_repetition,
                     order=target_type_order, height=3, aspect=1, palette='muted')
     plt.suptitle('Only best epoch per repetition')
-    plt.savefig('{}/{}_{}.png'.format(settings.output_dir, experiment_name, 'catplot2'), bbox_inches='tight')
+    plt.savefig('{}/{}_{}.png'.format(settings.output_dir, experiment_name, 'catplot'), bbox_inches='tight')
     plt.close()
     print('Aggregated boxplots saved')
 
 
     # MCC and Val ACC per participant over time
-    for metric in ['MCC', 'val_acc']:
+    for metric in ['MCC']:
         g = sns.relplot(x='epoch', y=metric, hue='target_type', col='participant', col_wrap=3, kind='line', data=results,
                         height=3, aspect=1)
         # g.fig.subplots_adjust(top=.9)
-        plt.savefig('{}/{}_{}.png'.format(settings.output_dir, experiment_name, metric), bbox_inches='tight')
+        plt.savefig('{}/{}_epochs_{}.png'.format(settings.output_dir, experiment_name, metric), bbox_inches='tight')
         plt.close()
         print('{} values saved'.format(metric))
 
@@ -114,6 +115,6 @@ def sort_dataframe(dataframe):
 
 
 if __name__ == '__main__':
-    experiment_name = 'inputtest_baseline'
+    experiment_name = 'input_nonoise'
     plot_results(experiment_name)
     # plot_results(settings.experiment_name)

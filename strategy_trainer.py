@@ -15,6 +15,7 @@ from keras.layers.core import Activation
 from keras.models import Sequential
 from keras.preprocessing.image import ImageDataGenerator
 from keras.utils import plot_model
+from keras.metrics import matthews_correlation
 from sklearn.model_selection import train_test_split
 
 import target_data_preparation
@@ -44,16 +45,26 @@ def ssd_trainer(all_data, participant_ids):
 
     """ CALLBACKS """
 
-    # HISTORY
-    class AccuracyHistory(keras.callbacks.Callback):
+    # # HISTORY
+    # class AccuracyHistory(keras.callbacks.Callback):
+    #     def on_train_begin(self, logs={}):
+    #         self.acc = []
+    #
+    #     def on_epoch_end(self, batch, logs={}):
+    #         self.acc.append(logs.get('acc'))
+    #         # classification_metrics(model, x_val, y_val)
+    #
+    #
+    # history = AccuracyHistory()
+
+    class MatthewsCorrelation(keras.callbacks.Callback):
         def on_train_begin(self, logs={}):
-            self.acc = []
+            self.matthews_correlation = []
 
         def on_epoch_end(self, batch, logs={}):
-            self.acc.append(logs.get('acc'))
-            # classification_metrics(model, x_val, y_val)
+            self.matthews_correlation.append(logs.get('matthews_correlation'))
 
-    history = AccuracyHistory()
+    matthews_correlation_callback = MatthewsCorrelation()
 
     # TENSORBOARD
     log_dir = settings.output_dir + '/logs/' + settings.iteration_name
@@ -66,7 +77,7 @@ def ssd_trainer(all_data, participant_ids):
     # CHECKPOINTS
     weights_folder = settings.output_dir + '/weights/'
     makedirs(weights_folder, exist_ok=True)
-    checkpoint = ModelCheckpoint(weights_folder + settings.iteration_name + '.hdf5', monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+    checkpoint = ModelCheckpoint(weights_folder + settings.iteration_name + '.hdf5', monitor='val_matthews_correlation', verbose=1, save_best_only=True, mode='max')
 
     # CSV Outputs
     csv_logger = CSVLogger(settings.output_dir + '/log_{}.csv'.format(settings.iteration_name), append=True, separator=',')
@@ -115,13 +126,16 @@ def ssd_trainer(all_data, participant_ids):
 
     confusion_metrics = Metrics()
 
-    callbacks_list = [history, tensor_board_callback, confusion_metrics]
+    callbacks_list = [confusion_metrics]
 
-    if settings.save_model:
+    if settings.callback_tensorboard:
+        callbacks_list.append(tensor_board_callback)
+
+    if settings.callback_save_model:
         callbacks_list.append(checkpoint)
 
-    if settings.csv_logger:
-        callbacks_list.append(csv_logger)
+    if settings.matthews_correlation_callback:
+        callbacks_list.append(matthews_correlation_callback)
 
     # For debugging purposes. Exports augmented image data
     export_dir = None
@@ -152,7 +166,7 @@ def ssd_trainer(all_data, participant_ids):
     # start training
     model.fit_generator(
         train_generator,
-        steps_per_epoch=len(x_train) / settings.batch_size,
+        steps_per_epoch=2 * len(x_train) / settings.batch_size,
         epochs=settings.epochs,
         verbose=1,
         validation_data=(x_val, y_val),
@@ -274,7 +288,7 @@ def create_model(iteration_name):
 
     model.compile(loss=keras.losses.categorical_crossentropy,
                   optimizer=keras.optimizers.Adam(),
-                  metrics=['accuracy'])
+                  metrics=['accuracy', 'matthews_correlation'])
 
     # sgd = keras.optimizers.SGD(lr=0.001)
     # model.compile(loss="categorical_crossentropy", optimizer=sgd, metrics=['accuracy'])

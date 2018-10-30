@@ -6,7 +6,7 @@ class Settings:
     ssd_folder = 'data/all_ssd'
     output_dir = 'output'
     serialized_data_filename = "serialized_data.p"
-    input_file = 'all_dataframes_3_nonoise.p'
+    input_file = 'all_dataframes_3_cropped.p'
 
     # SERIALIZE AND PROCESS SETTINGS
     caution_time = 120          # orange conflict
@@ -22,34 +22,38 @@ class Settings:
     figsize4 = (20, 5)
 
     # SSD IMPORT SETTINGS
-    convert_background = True
-    remove_grey_noise = True
-    rotate_upwards = True  # rotates the speedvector towards the north
-    crop_top = False  # only possible when rotated upwards
+    convert_background = False
+    remove_grey_noise = False
+    rotate_upwards = True  # rotates the speed vector towards the north
+    crop_top = True  # only possible when rotated upwards
     convert_to_greyscale = False
     ssd_import_size = (128, 128)
     save_png_files = True
     ignore_PRV = True
-    export_file = 'all_dataframes_3_blackssd'
+    export_file = 'all_dataframes_3_cropped'
 
 
     # CNN TRAIN SETTINGS
-    experiment_name = 'input_baseline'
+    experiment_name = 'test2'
     repetitions = 5
     participants = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10', 'P11','all']
     ssd = 'all' #'ON'  # 'OFF' , 'all'
     target_types = ['geometry', 'type', 'direction', 'value']
+    target_types = ['value']
     load_weights = False # 'direction_all_full_experiment_pooling_rep15'
     train_val_ratio = 0.75
-    epochs = 15
+    epochs = 30
     batch_size = 32
     rotation_range = 0  # the maximum degree of random rotation for data augmentation
-    save_model = False  # save model weights to disk
     save_model_structure = True  # save png of model structure to disk
     freeze_layers = False
     reload_data = False
-    csv_logger = False
     dropout_rate = 0.2
+
+    #Callbacks
+    callback_save_model = True  # save model weights to disk
+    callback_tensorboard = True #output log data to tensorboard
+    matthews_correlation_callback = True
 
     # inits
     current_participant = 'P0'

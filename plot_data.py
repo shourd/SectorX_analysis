@@ -81,13 +81,22 @@ def plot_commands(all_dataframes):
     plt.savefig(settings.data_folder + 'figures/command_values.png', bbox_inches='tight')
     plt.close()
 
-    """ FACTOR PLOT COMMAND VALUES """
+    # """ FACTOR PLOT COMMAND VALUES (ABSOLUTE HEADING) """
+    # hdg_commands = df_commands[df_commands.type == 'HDG']
+    # pd.options.mode.chained_assignment = None # surprsses the copy warning from following statement:
+    # hdg_commands.loc[:, 'value'] = hdg_commands.value.apply(lambda x: custom_round(x, base=20))
+    # pd.options.mode.chained_assignment = 'warn'
+    # sns.catplot(x='value', col='participant_id', col_wrap=3, data=hdg_commands, kind='count', palette='muted')
+    # plt.savefig(settings.data_folder + 'figures/facet_command_values.png', bbox_inches='tight')
+    # plt.close()
+
+    """ FACTOR PLOT COMMAND VALUES (RELATIVE HEADING) """
     hdg_commands = df_commands[df_commands.type == 'HDG']
     pd.options.mode.chained_assignment = None # surprsses the copy warning from following statement:
-    hdg_commands.loc[:, 'value'] = hdg_commands.value.apply(lambda x: custom_round(x, base=20))
+    hdg_commands.loc[:, 'hdg_rel'] = hdg_commands.hdg_rel.apply(lambda x: custom_round(x, base=20)).abs()
     pd.options.mode.chained_assignment = 'warn'
-    sns.catplot(x='value', col='participant_id', col_wrap=3, data=hdg_commands, kind='count')
-    plt.savefig(settings.data_folder + 'figures/facet_command_values.png', bbox_inches='tight')
+    sns.catplot(x='hdg_rel', col='participant_id', col_wrap=3, data=hdg_commands, kind='count', palette='muted')
+    plt.savefig(settings.data_folder + 'figures/facet_rel_hdg_abs.png', bbox_inches='tight')
     plt.close()
 
     ''' COMMAND TYPE TIMELINE '''
@@ -203,14 +212,13 @@ def plot_traffic(all_dataframes):
 
 
 if __name__ == "__main__":
-    settings = config.Settings
 
     try:
-        all_data = pickle.load(open(settings.data_folder + 'all_dataframes_3.p', "rb"))
+        all_data = pickle.load(open(settings.data_folder + 'all_dataframes_3_nonoise.p', "rb"))
         print('Data loaded from Pickle')
+        print('Start plotting')
+        plot_commands(all_data)
     except FileNotFoundError:
         print('Pickle all_dataframes.p not found. Please run process_data.py')
 
-    print('Start plotting')
-    plot_commands(all_data)
     # plot_traffic(all_data)

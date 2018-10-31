@@ -115,6 +115,6 @@ def sort_dataframe(dataframe):
 
 
 if __name__ == '__main__':
-    experiment_name = 'input_nonoise'
+    experiment_name = 'baseline'
     plot_results(experiment_name)
     # plot_results(settings.experiment_name)

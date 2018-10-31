@@ -34,12 +34,14 @@ class Settings:
 
 
     # CNN TRAIN SETTINGS
-    experiment_name = 'test2'
+    experiment_name = 'test4'
     repetitions = 5
     participants = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10', 'P11','all']
+    participants = [['P9','P10']]
+    participants = [['P5']]
     ssd = 'all' #'ON'  # 'OFF' , 'all'
     target_types = ['geometry', 'type', 'direction', 'value']
-    target_types = ['value']
+    target_types = ['direction']
     load_weights = False # 'direction_all_full_experiment_pooling_rep15'
     train_val_ratio = 0.75
     epochs = 30
@@ -54,6 +56,7 @@ class Settings:
     callback_save_model = True  # save model weights to disk
     callback_tensorboard = True #output log data to tensorboard
     matthews_correlation_callback = True
+    show_model_summary = False
 
     # inits
     current_participant = 'P0'

@@ -20,6 +20,7 @@ def plot_commands(all_dataframes):
 
     df_commands = df_commands[df_commands.type != 'N/A']
     df_commands = df_commands[df_commands.type != 'TOC']
+    df_commands = df_commands[df_commands.ssd_id != 'N/A']
 
     # sns.set_palette("GnBu_d")
 
@@ -53,9 +54,11 @@ def plot_commands(all_dataframes):
     data_direction = data_direction[(data_direction.direction != 'revert')]
     data_direction_spd = data_direction[data_direction.type == 'SPD']
     data_direction_hdg = data_direction[data_direction.type == 'HDG']
+    data_geometry = df_commands[df_commands.preference != 'N/A']
+    data_geometry = data_geometry[data_geometry.type.isin(['HDG', 'SPD'])]
     sns.countplot(data=data_direction_spd, x='participant_id', hue='direction', hue_order=['decrease', 'increase'], ax=ax1)
     sns.countplot(data=data_direction_hdg, x='participant_id', hue='direction', hue_order=['left', 'right'], ax=ax2)
-    sns.countplot(data=df_commands[df_commands.preference != 'N/A'], x='participant_id', hue='preference', ax=ax3)
+    sns.countplot(data=data_geometry, x='participant_id', hue='preference', ax=ax3)
     fig.suptitle('Command preferences')
     ax1.set_title('Speed')
     ax2.set_title('Heading')

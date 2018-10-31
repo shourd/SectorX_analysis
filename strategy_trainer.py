@@ -15,7 +15,6 @@ from keras.layers.core import Activation
 from keras.models import Sequential
 from keras.preprocessing.image import ImageDataGenerator
 from keras.utils import plot_model
-from keras.metrics import matthews_correlation
 from sklearn.model_selection import train_test_split
 
 import target_data_preparation
@@ -97,10 +96,9 @@ def ssd_trainer(all_data, participant_ids):
             val_acc = logs.get('val_acc')
             print('Informedness: {}; MCC: {}'.format(informedness, MCC))
 
-            # todo: check if this is ok.
-            if (MCC == 0.0) & (val_acc > 0.99):
-                MCC = 1
-                informedness = 1
+            if (MCC == 0.0) & (val_acc > 0.999):  # when there is only 1 class.
+                MCC = 'NaN'
+                informedness = 'NaN'
 
             self._data.append({
                 'epoch': self.epoch_no,
@@ -212,6 +210,7 @@ def prepare_training_set(ssd_data, command_data, participant_ids):
     # print(command_data.loc[ssd])
 
     if participant_ids[0] != 'all':
+        participant_ids = [item for sublist in participant_ids for item in sublist]
         command_data = command_data[command_data.participant_id.isin(participant_ids)]
     if run_ids is not 'all':
         command_data = command_data[command_data.run_id.isin(run_ids)]
@@ -219,6 +218,8 @@ def prepare_training_set(ssd_data, command_data, participant_ids):
         command_data = command_data[command_data.type.isin(command_types)]
     if settings.ssd == 'ON' or settings.ssd == 'OFF':
         command_data = command_data[command_data.SSD == settings.ssd]
+
+    print(command_data.to_string())
 
     # filter ssds based on remaining actions
     actions_ids = command_data.index.unique()
@@ -276,7 +277,7 @@ def create_model(iteration_name):
         for layer in model.layers[:4]:
             layer.trainable = False
 
-    model.summary()
+    # model.summary()
 
     # Output model structure to disk
     if not path.exists(settings.output_dir + '/figures'):
@@ -330,7 +331,8 @@ def create_pretrained_model():
     model.add(Dense(settings.num_classes, activation='softmax'))
 
     # Show a summary of the model. Check the number of trainable parameters
-    model.summary()
+    if settings.show_model_summary:
+        model.summary()
 
     # Output model structure to disk
     if not path.exists(settings.output_dir):

@@ -5,11 +5,11 @@ import matplotlib.pyplot as plt
 from config import settings
 sns.set()
 
-target_type_order = ['geometry', 'type', 'direction', 'value']
+target_type_order = ['geometry', 'type', 'value']
 
 consistency_df = pd.read_csv(settings.output_dir + '/consistency_metrics_normalized.csv').set_index('participant')
 # consistency_df = pd.read_csv(settings.output_dir + '/consistency_metrics.csv').set_index('participant')
-consistency_df.index = consistency_df.index.astype('str')
+consistency_df.index = consistency_df.index.astype('int')
 performance_df = pd.read_csv(settings.output_dir + '/performance_metrics.csv').set_index('participant')
 
 consistency_df.drop('Unnamed: 0', axis=1, inplace=True)
@@ -31,28 +31,18 @@ for i_target_type, target_type in enumerate(target_type_order):
 plt.savefig('{}/{}.png'.format(settings.output_dir, 'performance'), bbox_inches='tight')
 plt.close(fig)
 
-
-
-
 combined_df = pd.concat([consistency_df, performance_df], axis=1, sort=False, join='outer')
 # combined_df = combined_df.iloc[:-2, :]
 print(combined_df.to_string())
 
-target_type_order = ['geometry', 'type', 'direction', 'value']
+target_type_order = ['geometry', 'type', 'value']
 # target_type_order = ['value']
 for target_type in target_type_order:
     """ OUTLIERS """
-    if target_type == 'direction':
-        g = sns.lmplot(x=target_type + '_consistency', y=target_type, data=combined_df.drop(['5']))
-    elif target_type == 'geometry':
-        g = sns.lmplot(x=target_type + '_consistency', y=target_type, data=combined_df.drop(['9']))
-    else:
-        g = sns.lmplot(x=target_type + '_consistency', y=target_type, data=combined_df)
-
-    # ax.set_title(target_type)
+    g = sns.lmplot(x=target_type + '_consistency', y=target_type, data=combined_df)
     g.set_xlabels(target_type + ' consistency')
     g.set_ylabels(target_type + ' performance')
 
-g = sns.lmplot(x='final_consistency', y='average_performance', data=combined_df)
+g = sns.lmplot(x='final_consistency', y='average_MCC', data=combined_df)
 
 plt.show()

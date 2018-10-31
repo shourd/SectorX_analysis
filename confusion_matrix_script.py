@@ -3,7 +3,7 @@ import itertools
 
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.metrics import confusion_matrix, classification_report, matthews_corrcoef, f1_score, \
+from sklearn.metrics import confusion_matrix, matthews_corrcoef, f1_score, \
     balanced_accuracy_score
 
 from config import settings
@@ -22,7 +22,6 @@ def get_confusion_metrics(y_test, y_pred, epoch_no=0,
 
 
     cm = confusion_matrix(y_test, y_pred)
-    # report = classification_report(y_test, y_pred, [0, 1], settings.class_names)
 
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
@@ -46,7 +45,7 @@ def get_confusion_metrics(y_test, y_pred, epoch_no=0,
     informedness = round(balanced_accuracy_score(y_test, y_pred, adjusted=True), 3)
     # http: // scikit - learn.org / stable / modules / model_evaluation.html
 
-    if epoch_no == settings.epochs:
+    if MCC == 0:
         plt.figure()
         plt.imshow(cm, interpolation='nearest', cmap=cmap)
         plt.title(title)
@@ -67,7 +66,7 @@ def get_confusion_metrics(y_test, y_pred, epoch_no=0,
         plt.tight_layout()
         plt.grid(b=False)
 
-        plt.savefig(settings.output_dir + '/figures/confusion_{}_epoch{}.png'.format(settings.iteration_name, epoch_no))
+        plt.savefig(settings.output_dir + '/figures/confusion_{}.png'.format(settings.iteration_name, epoch_no))
         plt.close()
 
     return informedness, F1_score, MCC

@@ -37,6 +37,8 @@ def ssd_trainer(all_data, participant_ids):
     except ValueError:
         print('---------------------------------- ERROR ----------------------------------')
         print('Only one data sample of one class avaialbe. Not enough for stratified class distribution.')
+        return pd.DataFrame()
+
 
     """ CREATE MODEL """
     # model, layer = create_model(settings)
@@ -191,7 +193,8 @@ def prepare_training_set(ssd_data, command_data, participant_ids):
     """ FILTER COMMANDS """
     run_ids = 'all'  #['R1'] #'all'
     if settings.target_type == 'direction':
-        command_types = ['HDG']
+        # todo: check if this is an improvement (+ DCT)
+        command_types = ['HDG', 'DCT']
     elif settings.target_type == 'geometry':
         command_types = ['HDG', 'SPD']
         command_data = command_data[command_data.preference != 'N/A']
@@ -210,7 +213,7 @@ def prepare_training_set(ssd_data, command_data, participant_ids):
     # print(command_data.loc[ssd])
 
     if participant_ids[0] != 'all':
-        participant_ids = [item for sublist in participant_ids for item in sublist]
+        # participant_ids = [item for sublist in participant_ids for item in sublist]
         command_data = command_data[command_data.participant_id.isin(participant_ids)]
     if run_ids is not 'all':
         command_data = command_data[command_data.run_id.isin(run_ids)]
@@ -218,8 +221,6 @@ def prepare_training_set(ssd_data, command_data, participant_ids):
         command_data = command_data[command_data.type.isin(command_types)]
     if settings.ssd == 'ON' or settings.ssd == 'OFF':
         command_data = command_data[command_data.SSD == settings.ssd]
-
-    print(command_data.to_string())
 
     # filter ssds based on remaining actions
     actions_ids = command_data.index.unique()
@@ -405,7 +406,3 @@ if __name__ == "__main__":
         all_data = ssd_loader()
 
     ssd_trainer(all_data, participant_ids=['all'])
-
-    # TODO: color channels
-    # TODO: vary over number of locked layers with transfer learning
-    # TODO: bulid a numerical approximator instead of class approximator for rel. heading

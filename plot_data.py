@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-import config
 from config import settings
 
 
@@ -14,7 +13,7 @@ def plot_commands(all_dataframes):
     sns.set()
     sns.set_context("notebook")   # smaller: paper
 
-    os.makedirs(os.path.dirname('figures/'), exist_ok=True)
+    os.makedirs(os.path.dirname('figures/extra'), exist_ok=True)
     df_commands = all_dataframes['commands'].reset_index()
     # df_traffic = all_dataframes['traffic'].reset_index()
 
@@ -60,38 +59,38 @@ def plot_commands(all_dataframes):
     sns.countplot(data=data_direction_hdg, x='participant_id', hue='direction', hue_order=['left', 'right'], ax=ax2)
     sns.countplot(data=data_geometry, x='participant_id', hue='preference', ax=ax3)
     fig.suptitle('Command preferences')
-    ax1.set_title('Speed')
-    ax2.set_title('Heading')
-    ax3.set_title('Control preference')
+    ax1.set_title('Direction (Speed)')
+    ax2.set_title('Direction (Heading)')
+    ax3.set_title('Geometry')
     ax1.set_xlabel('Particpant ID')
     ax2.set_xlabel('Participant ID')
     plt.savefig(settings.data_folder + 'figures/command_preferences.png', bbox_inches='tight')
     plt.close()
 
-    """ COMMAND VALUES"""
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=settings.figsize2)
-    spd_commands = df_commands[df_commands.type == 'SPD'].value
-    spd_commands = pd.to_numeric(spd_commands)
-    hdg_commands = df_commands[df_commands.type == 'HDG'].value
-    hdg_commands = pd.to_numeric(hdg_commands)
-    sns.distplot(spd_commands, bins=10, kde=False, ax=ax1)
-    sns.distplot(hdg_commands, bins=36, kde=False, ax=ax2)
-    ax1.set_title('SPD commands')
-    ax1.set_xlabel('IAS [kts]')
-    ax2.set_title('HDG commands')
-    ax2.set_xlabel('HDG [deg]')
-    fig.suptitle('Command Values')
-    plt.savefig(settings.data_folder + 'figures/command_values.png', bbox_inches='tight')
-    plt.close()
-
-    # """ FACTOR PLOT COMMAND VALUES (ABSOLUTE HEADING) """
-    # hdg_commands = df_commands[df_commands.type == 'HDG']
-    # pd.options.mode.chained_assignment = None # surprsses the copy warning from following statement:
-    # hdg_commands.loc[:, 'value'] = hdg_commands.value.apply(lambda x: custom_round(x, base=20))
-    # pd.options.mode.chained_assignment = 'warn'
-    # sns.catplot(x='value', col='participant_id', col_wrap=3, data=hdg_commands, kind='count', palette='muted')
-    # plt.savefig(settings.data_folder + 'figures/facet_command_values.png', bbox_inches='tight')
+    # """ COMMAND VALUES"""
+    # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=settings.figsize2)
+    # spd_commands = df_commands[df_commands.type == 'SPD'].value
+    # spd_commands = pd.to_numeric(spd_commands)
+    # hdg_commands = df_commands[df_commands.type == 'HDG'].value
+    # hdg_commands = pd.to_numeric(hdg_commands)
+    # sns.distplot(spd_commands, bins=10, kde=False, ax=ax1)
+    # sns.distplot(hdg_commands, bins=36, kde=False, ax=ax2)
+    # ax1.set_title('SPD commands')
+    # ax1.set_xlabel('IAS [kts]')
+    # ax2.set_title('HDG commands')
+    # ax2.set_xlabel('HDG [deg]')
+    # fig.suptitle('Command Values')
+    # plt.savefig(settings.data_folder + 'figures/command_values.png', bbox_inches='tight')
     # plt.close()
+
+    """ FACTOR PLOT COMMAND VALUES (ABSOLUTE HEADING) """
+    hdg_commands = df_commands[df_commands.type == 'HDG']
+    pd.options.mode.chained_assignment = None # surprsses the copy warning from following statement:
+    hdg_commands.loc[:, 'value'] = hdg_commands.value.apply(lambda x: custom_round(x, base=20))
+    pd.options.mode.chained_assignment = 'warn'
+    sns.catplot(x='value', col='participant_id', col_wrap=3, data=hdg_commands, kind='count', palette='muted')
+    plt.savefig(settings.data_folder + 'figures/extra/facet_rel_hdg.png', bbox_inches='tight')
+    plt.close()
 
     """ FACTOR PLOT COMMAND VALUES (RELATIVE HEADING) """
     hdg_commands = df_commands[df_commands.type == 'HDG']
@@ -99,7 +98,7 @@ def plot_commands(all_dataframes):
     hdg_commands.loc[:, 'hdg_rel'] = hdg_commands.hdg_rel.apply(lambda x: custom_round(x, base=20)).abs()
     pd.options.mode.chained_assignment = 'warn'
     sns.catplot(x='hdg_rel', col='participant_id', col_wrap=3, data=hdg_commands, kind='count', palette='muted')
-    plt.savefig(settings.data_folder + 'figures/facet_rel_hdg_abs.png', bbox_inches='tight')
+    plt.savefig(settings.data_folder + 'figures/extra/facet_rel_hdg_abs.png', bbox_inches='tight')
     plt.close()
 
     ''' COMMAND TYPE TIMELINE '''
@@ -108,21 +107,21 @@ def plot_commands(all_dataframes):
     g.map(sns.stripplot, "timestamp", "run_id", "type", jitter=.01)
     plt.suptitle('Speed commands given')
     g.fig.subplots_adjust(top=.9)
-    plt.savefig(settings.data_folder + 'figures/commands_over_time_spd.png', bbox_inches='tight')
+    plt.savefig(settings.data_folder + 'figures/extra/commands_over_time_spd.png', bbox_inches='tight')
 
     df_commands_hdg = df_commands[df_commands.type == 'HDG']
     g = sns.FacetGrid(df_commands_hdg, col="participant_id", col_wrap=3, palette='GnBu_d')
     g.map(sns.stripplot, "timestamp", "run_id", "type", jitter=.01)
     plt.suptitle('Heading commands given')
     g.fig.subplots_adjust(top=.9)
-    plt.savefig(settings.data_folder + 'figures/commands_over_time_hdg.png', bbox_inches='tight')
+    plt.savefig(settings.data_folder + 'figures/extra/commands_over_time_hdg.png', bbox_inches='tight')
 
     df_commands_dct = df_commands[df_commands.type == 'DCT']
     g = sns.FacetGrid(df_commands_dct, col="participant_id", col_wrap=3, palette='GnBu_d')
     g.map(sns.stripplot, "timestamp", "run_id", "type", jitter=.01)
     plt.suptitle('Direct to commands given')
     g.fig.subplots_adjust(top=.9)
-    plt.savefig(settings.data_folder + 'figures/commands_over_time_dct.png', bbox_inches='tight')
+    plt.savefig(settings.data_folder + 'figures/extra/commands_over_time_dct.png', bbox_inches='tight')
 
     plt.close()
 
@@ -141,7 +140,7 @@ def plot_traffic(all_dataframes):
 
     """ HEATMAP """
     ''' poging 1 '''
-    df_traffic = df_traffic.query("participant_id == 'P1'")
+    df_traffic = df_traffic.query("participant_id == 1")
     df_traffic = df_traffic[(df_traffic.x_nm < 35)]
     df_traffic = df_traffic[(df_traffic.x_nm > - 35)]
     df_traffic = df_traffic[(df_traffic.y_nm < 25)]
@@ -217,11 +216,11 @@ def plot_traffic(all_dataframes):
 if __name__ == "__main__":
 
     try:
-        all_data = pickle.load(open(settings.data_folder + 'all_dataframes_3_nonoise.p', "rb"))
+        all_data = pickle.load(open(settings.data_folder + '181101_all_dataframes_3.p', "rb"))
         print('Data loaded from Pickle')
         print('Start plotting')
         plot_commands(all_data)
     except FileNotFoundError:
-        print('Pickle all_dataframes.p not found. Please run process_data.py')
+        print('Pickle all_dataframes_3.p not found. Please run process_data.py')
 
     # plot_traffic(all_data)

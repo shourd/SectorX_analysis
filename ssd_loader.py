@@ -8,7 +8,7 @@ from config import settings
 
 
 class Command:
-    participant_id = 'P0'
+    participant_id = 0
     run_id = 'R0'
     timestamp = 0
     ACID = 'AC0000'
@@ -110,6 +110,7 @@ def generate_command(filename):
                 command.value = int(command.command[3:])
             else:
                 command.value = 'N/A'
+            command.participant_id = int(command.participant_id[1:])  # convert PX to X
 
     else:
         print('No SPD, HDG, DCT, or TOC command:', filename)

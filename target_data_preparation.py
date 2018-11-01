@@ -1,8 +1,4 @@
-import matplotlib.pyplot as plt
-import seaborn as sns
-
 from config import settings
-from plot_data import custom_round
 
 
 def make_categorical_list(command_data, target_type):

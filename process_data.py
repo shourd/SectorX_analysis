@@ -34,7 +34,7 @@ def create_dataframes(participant_list=None):
 
         for i_run, run in enumerate(participant.runs):
 
-            participant_id = participant_list[i_participant].name
+            participant_id = int(participant_list[i_participant].name[1:])
             run_id = 'R{}'.format(i_run + 1)
             run.SSD = experiment_setup.loc[run_id, participant_id].SSD
             run.scenario_id = experiment_setup.loc[run_id, participant_id].Scenario
@@ -334,15 +334,15 @@ def initialize_experiment_setup():
     arrays = [['R1', 'R1', 'R2', 'R2', 'R3', 'R3', 'R4', 'R4'],
               ['Scenario', 'SSD', 'Scenario', 'SSD', 'Scenario', 'SSD', 'Scenario', 'SSD']]
 
-    experiment_setup = pd.DataFrame(columns=settings.columns, index=arrays)
+    experiment_setup = pd.DataFrame(columns=np.arange(1,13,1), index=arrays)
     experiment_setup.loc[(['R1', 'R3'], 'Scenario'), :] = 'S1'
     experiment_setup.loc[(['R2', 'R4'], 'Scenario'), :] = 'S2'
 
-    experiment_setup.loc[(['R1', 'R2'], 'SSD'), ['P1', 'P2', 'P3', 'P7', 'P8', 'P9']] = 'OFF'
-    experiment_setup.loc[(['R3', 'R4'], 'SSD'), ['P4', 'P5', 'P6', 'P10', 'P11', 'P12']] = 'OFF'
+    experiment_setup.loc[(['R1', 'R2'], 'SSD'), [1, 2, 3, 7, 8, 9]] = 'OFF'
+    experiment_setup.loc[(['R3', 'R4'], 'SSD'), [4, 5, 6, 10, 11, 12]] = 'OFF'
 
-    experiment_setup.loc[(['R3', 'R4'], 'SSD'), ['P1', 'P2', 'P3', 'P7', 'P8', 'P9']] = 'ON'
-    experiment_setup.loc[(['R1', 'R2'], 'SSD'), ['P4', 'P5', 'P6', 'P10', 'P11', 'P12']] = 'ON'
+    experiment_setup.loc[(['R3', 'R4'], 'SSD'), [1, 2, 3, 7, 8, 9]] = 'ON'
+    experiment_setup.loc[(['R1', 'R2'], 'SSD'), [4, 5, 6, 10, 11, 12]] = 'ON'
 
     return experiment_setup
 

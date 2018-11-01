@@ -42,32 +42,35 @@ def main():
     # measure training time
     start_time = time.time()
     metrics_all = pd.DataFrame()
-    for target_type in settings.target_types:
-        settings.target_type = target_type
-        settings.load_weights = False
 
-        for i_repetition in range(settings.repetitions):
+    for i_repetition in range(settings.repetitions):
+        settings.current_repetition = i_repetition + 1
+
+        for target_type in settings.target_types:
+            settings.target_type = target_type
+
             for participant in settings.participants:
                 settings.current_participant = participant
-                settings.current_repetition = i_repetition + 1
-                settings.iteration_name = '{}_{}_{}_rep{}'.format(target_type, participant, settings.experiment_name,
-                                                                  i_repetition + 1)
-                print('------------------------------------------------')
-                print('-- Start training:', settings.iteration_name)
-                print('------------------------------------------------')
-
                 participant_ids = [participant]
-                metrics_run = ssd_trainer(all_data, participant_ids)
-                if metrics_all.empty:
-                    metrics_all = metrics_run
-                else:
-                    metrics_all = metrics_all.append(metrics_run)
 
-                metrics_all.to_csv(settings.output_dir + '/metrics_{}.csv'.format(settings.experiment_name))
+                for ssd_condition in settings.ssd_conditions:
+                    settings.ssd = ssd_condition
+                    settings.iteration_name = '{}_{}_{}_{}_rep{}'.format(target_type, participant,
+                                                                         settings.experiment_name,
+                                                                      ssd_condition, i_repetition + 1)
+                    print('------------------------------------------------')
+                    print('-- Start training:', settings.iteration_name)
+                    print('------------------------------------------------')
+
+                    """ TRAIN MODEL """
+                    metrics_run = ssd_trainer(all_data, participant_ids)
+                    if not metrics_run.empty:
+                        metrics_all = metrics_run if metrics_all.empty else metrics_all.append(metrics_run)
+                        metrics_all.to_csv(settings.output_dir + '/metrics_{}.csv'.format(settings.experiment_name))
 
     print('Train time: {} min'.format(round(int(time.time() - start_time) / 60), 1))
     plot_results(settings.experiment_name)
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     main()

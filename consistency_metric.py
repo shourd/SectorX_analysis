@@ -1,9 +1,13 @@
-from config import settings
 import pickle
+
+import matplotlib.pyplot as plt
 import numpy as np
-from scipy import stats
 import pandas as pd
 import seaborn as sns
+from scipy import stats
+
+from config import settings
+
 
 def calc_consistency_metric():
     all_data = pickle.load(open(settings.data_folder + settings.input_file, "rb"))
@@ -16,7 +20,7 @@ def calc_consistency_metric():
     consistency_list = []
     consistency_df = pd.DataFrame()
     for participant in range(1,13):
-        commands_p = commands_df[commands_df.participant_id == 'P{}'.format(participant)]
+        commands_p = commands_df[commands_df.participant_id == participant]
         if commands_p.empty:
             continue
 
@@ -75,40 +79,41 @@ def calc_consistency_metric():
         else:
             consistency_df = consistency_df.append(run_df)
 
-        print('--------------------------')
-        print('participant: {}'.format(participant))
-        print('geometry: ', geometry_consistency)
-        print('type: ', type_consistency)
-        # print('direction: ', direction_consistency)
-        print('value: ', value_consistency)
-        print('final consistency: ', total_consistency)
-
     consistency_df_normalized = consistency_df.apply(stats.zscore)
-    # todo: include 12
-    consistency_df_normalized.participant = [1,2,3,4,5,6,7,8,9,10,11]
-    print(consistency_df_normalized.to_string())
-
-
-
-    # consistency_array = np.array(consistency_list)
-    # consistency_zscores = np.round(stats.zscore(consistency_array), decimals=2)
-    # print('--------------------------')
-    # print('Z-scores: ', consistency_zscores)
-    # print('Average consistency: ', round(np.array(consistency_list).mean(), 2))
+    consistency_df_normalized.participant = np.arange(1,13,1)
 
     consistency_df.to_csv(settings.output_dir + '/consistency_metrics.csv')
     consistency_df_normalized.to_csv(settings.output_dir + '/consistency_metrics_normalized.csv')
 
+    # add skill level
+    skill_level_list = ['novice' if (p in np.arange(1,7,1)) or (p == 11) else 'intermediate' for p in consistency_df.participant]
+    skill_level_list = ['novice' if (p in np.arange(1, 7, 1)) else 'intermediate' for p in consistency_df.participant]
+    consistency_df_normalized['skill_level'] = skill_level_list
+
+    print(consistency_df_normalized.to_string())
+
+
     """ PLOTTING """
-    g = sns.catplot(data=consistency_df, x='participant', y='final_consistency', kind='bar', palette='muted')
+    consistency_df_melt = consistency_df_normalized.melt(id_vars=['participant', 'skill_level'])
+    sns.set()
+    g = sns.catplot(data=consistency_df_melt, x='participant', y='value', hue='variable', kind='bar', palette='muted')
+    plt.title('Consistency scores per abstraction level')
+    plt.savefig('{}/{}/{}.png'.format(settings.output_dir, settings.experiment_name, 'consistency_scores'), bbox_inches='tight')
+    plt.close()
+
+    g = sns.catplot(data=consistency_df_melt, x='skill_level', y='value', hue='variable', kind='box', palette='muted')
+    plt.title('Consistency scores per abstraction level per skill level')
+    plt.savefig('{}/{}/{}.png'.format(settings.output_dir, settings.experiment_name, 'consistency_scores_skill'),
+                bbox_inches='tight')
+    plt.close()
 
 def normalize_consistency(x, y):
     total = x + y
     return 2 * (np.max([x/total, y/total]) - 0.5)
 
-def threshold_consistency(x, y):
-    total = x + y
-    return 2 * (np.min([x/total, y/total]))
+# def threshold_consistency(x, y):
+#     total = x + y
+#     return 2 * (np.min([x/total, y/total]))
 
 
 if __name__ == '__main__':

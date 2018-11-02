@@ -26,11 +26,11 @@ def plot_results(experiment_name):
     # results['performance'] = (results.MCC + results.val_F1_score + results.val_acc + results.val_informedness)/4
     performance_matrix = results.groupby(['participant', 'target_type']).MCC.agg('max').unstack().reset_index()
     performance_matrix['average_MCC'] = performance_matrix.loc[:, target_type_order].mean(axis=1)
-    performance_matrix.to_csv('{}/{}_performance.csv'.format(experiment_name, settings.output_dir))
+    performance_matrix.to_csv('{}/{}_performance.csv'.format(settings.output_dir, experiment_name))
     # print('Performance metrics saved')
 
-    results_target_type = results.groupby(['participant', 'target_type']).agg('max').reset_index()
-    results_repetition = results.groupby(['participant', 'target_type', 'repetition']).agg('max').reset_index()
+    results_target_type = results.groupby(['participant', 'target_type','SSD']).agg('max').reset_index()
+    results_repetition = results.groupby(['participant', 'target_type', 'repetition','SSD']).agg('max').reset_index()
 
     mcc_mean = round(results_target_type.MCC.mean(), 2)
     mcc_mean_all_reps = round(results_repetition.MCC.mean(), 2)
@@ -76,7 +76,7 @@ def plot_results(experiment_name):
     # MCC per participant per target type
     g = sns.catplot(x='target_type', y='MCC', hue='SSD', col='participant', col_wrap=3, kind='box', data=results_repetition,
                     order=target_type_order, height=3, aspect=1, palette='muted')
-    plt.suptitle('Only best epoch per repetition')
+    # plt.suptitle('Only best epoch per repetition')
     plt.savefig('{}/{}_{}.png'.format(settings.output_dir, experiment_name, 'catplot'), bbox_inches='tight')
     plt.close()
     print('Plot saved')
@@ -93,6 +93,6 @@ def plot_results(experiment_name):
 
 
 if __name__ == '__main__':
-    experiment_name = 'complete_baseline'
+    experiment_name = 'ssd_test2'
     plot_results(experiment_name)
     # plot_results(settings.experiment_name)

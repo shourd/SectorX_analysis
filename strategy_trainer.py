@@ -3,6 +3,7 @@ import time
 from os import path, makedirs
 
 import keras
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -22,6 +23,7 @@ from config import settings
 from confusion_matrix_script import get_confusion_metrics
 from ssd_loader import ssd_loader
 
+matplotlib.use('agg')  # should fix a multithread issue.
 
 def ssd_trainer(all_data, participant_ids):
     K.clear_session()
@@ -114,7 +116,9 @@ def ssd_trainer(all_data, participant_ids):
                 'val_F1_score': F1_score,
                 'MCC': MCC,
                 'SSD': settings.ssd,
-                'skill_level': settings.determine_skill_level()
+                'skill_level': settings.determine_skill_level(),
+                'num_train_samples': len(x_train),
+                'num_val_samples': len(x_val)
             })
 
             self.epoch_no += 1
@@ -195,6 +199,7 @@ def prepare_training_set(ssd_data, command_data, participant_ids):
     if settings.target_type == 'direction':
         # todo: check if this is an improvement (+ DCT)
         command_types = ['HDG', 'DCT']
+        # command_types = ['HDG']
     elif settings.target_type == 'geometry':
         command_types = ['HDG', 'SPD']
         command_data = command_data[command_data.preference != 'N/A']

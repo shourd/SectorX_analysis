@@ -11,7 +11,6 @@ from serialize_data import serialize_data
 from ssd_loader import ssd_loader
 from strategy_trainer import ssd_trainer
 
-
 def main():
 
     try:

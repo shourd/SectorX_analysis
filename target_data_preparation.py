@@ -92,6 +92,9 @@ def make_categorical_list(command_data, target_type):
                 res = 1
             elif command > line2:
                 res = 2
+            else:
+                res = 3
+                print('RELATIVE HEADING ERROR!')
 
             target_list.append(res)
 

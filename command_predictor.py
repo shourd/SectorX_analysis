@@ -21,7 +21,7 @@ def main():
         }
         prediction_certainty_dict = dict()
         for target_type in target_types:
-            if prediction_dict['type'] == 'DCT' or prediction_dict['type'] == 'SPD':
+            if prediction_dict['type'] == 'SPD':
                 continue
             model_name = 'test_3classes'
             weights_filename = '{}_all_general_model.hdf5'.format(target_type)

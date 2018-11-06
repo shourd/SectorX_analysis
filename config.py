@@ -62,6 +62,7 @@ class Settings:
     num_classes = 2
     skill_level = 'N/A'
     ssd = 'BOTH'
+    target_type = 'None'
     # steps_per_epoch = 0
 
     def __init__(self):

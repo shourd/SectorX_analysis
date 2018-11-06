@@ -21,11 +21,11 @@ class Settings:
     export_file = '181101_all_dataframes_3.p'
 
     # CNN TRAIN SETTINGS
-    experiment_name = 'complete_baseline'
+    experiment_name = 'test'
     repetitions = 5
     participants = np.arange(1,13,1)  # [1 .. 12]
     ssd_conditions = ['ON', 'OFF', 'BOTH']
-    target_types = ['value']
+    target_types = ['geometry']
     load_weights = False # 'direction_all_full_experiment_pooling_rep15'
     train_val_ratio = 0.75
     epochs = 30

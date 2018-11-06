@@ -255,10 +255,10 @@ def split_data(x_data, y_data):
 def create_model(iteration_name):
     """ CREATING THE NEURAL NETWORK """
     model = Sequential()
-    model.add(keras.layers.InputLayer(input_shape=settings.ssd_shape))
+    # model.add(keras.layers.InputLayer(input_shape=settings.ssd_shape))
 
     # BASELINE ARCHITECTURE
-    model.add(Conv2D(32, kernel_size=(2, 2), strides=(1, 1)))
+    model.add(Conv2D(32, kernel_size=(2, 2), strides=(1, 1), input_shape=settings.ssd_shape))
     convout = Activation('relu')
     model.add(convout)
     model.add(MaxPooling2D(pool_size=(2, 2)))
@@ -272,7 +272,7 @@ def create_model(iteration_name):
     model.add(Conv2D(32, kernel_size=(2, 2), strides=(1, 1), activation='relu'))
 
     # Flattening and FC
-    model.add(Flatten())
+    model.add(Flatten(input_shape=settings.ssd_import_size))
     model.add(Dense(1024, activation='relu'))
     if settings.dropout_rate != 0:
         model.add(Dropout(settings.dropout_rate))
@@ -291,14 +291,16 @@ def create_model(iteration_name):
         makedirs(settings.output_dir + '/figures')
 
     if settings.save_model_structure:
-        plot_model(model, to_file='{}/figures/structure_{}.png'.format(settings.output_dir, settings.experiment_name), show_shapes=True, show_layer_names=False)
+        plot_model(model, to_file='{}/figures/structure_{}.png'.format(settings.output_dir, settings.experiment_name),
+                   show_shapes=True, show_layer_names=False)
 
     model.compile(loss=keras.losses.categorical_crossentropy,
                   optimizer=keras.optimizers.Adam(),
                   metrics=['accuracy', 'matthews_correlation'])
 
-    # sgd = keras.optimizers.SGD(lr=0.001)
-    # model.compile(loss="categorical_crossentropy", optimizer=sgd, metrics=['accuracy'])
+    with open('{}/{}.json'.format(settings.output_dir, settings.experiment_name), "w") as json_file:
+        json_file.write(model.to_json())
+        print("Saved model architecture to disk ({}.json)".format(settings.experiment_name))
 
     if settings.load_weights is not False:
         weights_filepath = settings.output_dir + '/weights/' + settings.load_weights + '.hdf5'
@@ -393,13 +395,6 @@ def save_training_data(informedness_list):
     with open(filename, 'a') as f:
         f.write(",".join(map(str, informedness_list)))
         f.write("\n")
-
-def show_ssd(ssd_id, ssd_stack):
-    ssd = ssd_stack[ssd_id, :, :, :]
-    ssd *= 255
-    ssd = ssd.astype('uint8')
-    ssd = Image.fromarray(ssd)
-    ssd.show()
 
 
 if __name__ == "__main__":

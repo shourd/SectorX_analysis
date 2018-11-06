@@ -76,7 +76,7 @@ def ssd_loader(dataframes=None):
     dataframes['commands'] = df_commands
     dataframes['ssd_images'] = ssd_stack
 
-    pickle.dump(dataframes, open(settings.data_folder + settings.export_file + '.p', "wb"))
+    pickle.dump(dataframes, open(settings.data_folder + settings.export_file, "wb"))
     print('-----------------------------------------------------------------')
     print('{} SDDs saved to pickle.'.format(len(ssd_stack)))
     print('{} SSDs filtered out'.format(i_file - ssd_id))

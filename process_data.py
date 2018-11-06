@@ -192,8 +192,10 @@ def analyse_commands(all_dataframes=None):
     :type all_dataframes: dict
     """
 
+    print('Start analyzing commands..')
+
     if all_dataframes is None:
-        all_dataframes = load_from_pickle('all_dataframes.p')
+        all_dataframes = load_from_pickle('all_dataframes_1.p')
 
     df_traffic = all_dataframes['traffic']
     df_commands = all_dataframes['commands']
@@ -313,8 +315,11 @@ def determine_control_preference(df_traffic, df_commands):
 
     for i_command in range(len(df_commands)):
         command = df_commands.iloc[i_command]
-        if command.ACID not in commands_received_list:
+
+        if command.ACID not in commands_received_list and command.type != 'N/A': # only consider first decision per Aircraft
+
             if command.ACID in main_flow_ACIDs:
+
                 if command.direction is 'right' or command.direction is 'decrease':
                     preferences[i_command] = 'behind'
                 elif command.direction is 'left' or command.direction is 'increase':
@@ -325,7 +330,7 @@ def determine_control_preference(df_traffic, df_commands):
                 elif command.direction is 'right' or command.direction is 'increase':
                     preferences[i_command] = 'infront'
 
-            commands_received_list.append(command.ACID)
+                commands_received_list.append(command.ACID)
     return preferences
 
 
@@ -440,10 +445,10 @@ if __name__ == "__main__":
     #     print('Data loaded from Pickle')
     # except FileNotFoundError:
     print('Start loading data.')
-    all_data = create_dataframes()  # generates all_dataframes_1.p
+    # all_data = create_dataframes()  # generates all_dataframes_1.p
     print('Dataframes created and saved to Pickle')
 
-    all_data = analyse_commands(all_data)  # generates all_dataframes_2.p
+    all_data = analyse_commands()  # generates all_dataframes_2.p
     print('Commands analyzed and saved to Pickle')
     # analyse_conflicts(all_data)
 

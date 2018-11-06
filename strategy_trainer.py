@@ -23,7 +23,7 @@ from config import settings
 from confusion_matrix_script import get_confusion_metrics
 from ssd_loader import ssd_loader
 
-matplotlib.use('agg')  # should fix a multithread issue.
+matplotlib.use('agg')  # fixes a multi-thread issue.
 
 def ssd_trainer(all_data, participant_ids):
     K.clear_session()

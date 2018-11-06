@@ -13,7 +13,7 @@ def plot_commands(all_dataframes):
     sns.set()
     sns.set_context("notebook")   # smaller: paper
 
-    os.makedirs(os.path.dirname('figures/extra'), exist_ok=True)
+    os.makedirs(os.path.dirname(settings.data_folder + 'figures/extra'), exist_ok=True)
     df_commands = all_dataframes['commands'].reset_index()
     # df_traffic = all_dataframes['traffic'].reset_index()
 
@@ -215,12 +215,12 @@ def plot_traffic(all_dataframes):
 
 if __name__ == "__main__":
 
-    try:
-        all_data = pickle.load(open(settings.data_folder + '181101_all_dataframes_3.p', "rb"))
-        print('Data loaded from Pickle')
-        print('Start plotting')
-        plot_commands(all_data)
-    except FileNotFoundError:
-        print('Pickle all_dataframes_3.p not found. Please run process_data.py')
+    # try:
+    all_data = pickle.load(open(settings.data_folder + '181101_all_dataframes_3.p', "rb"))
+    #     print('Data loaded from Pickle')
+    #     print('Start plotting')
+    plot_commands(all_data)
+    # except FileNotFoundError:
+    #     print('Pickle all_dataframes_3.p not found. Please run process_data.py')
 
     # plot_traffic(all_data)

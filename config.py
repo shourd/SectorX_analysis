@@ -11,7 +11,7 @@ class Settings:
 
     # SSD IMPORT SETTINGS
     convert_background = False
-    remove_grey_noise = True
+    remove_grey_noise = False
     rotate_upwards = True  # rotates the speed vector towards the north
     crop_top = True  # only possible when rotated upwards
     convert_to_greyscale = False
@@ -21,11 +21,11 @@ class Settings:
     export_file = '181101_all_dataframes_3.p'
 
     # CNN TRAIN SETTINGS
-    experiment_name = 'ssd_test3'
+    experiment_name = 'complete_baseline'
     repetitions = 5
     participants = np.arange(1,13,1)  # [1 .. 12]
     ssd_conditions = ['ON', 'OFF', 'BOTH']
-    target_types = ['geometry', 'type', 'direction', 'value']
+    target_types = ['value']
     load_weights = False # 'direction_all_full_experiment_pooling_rep15'
     train_val_ratio = 0.75
     epochs = 30

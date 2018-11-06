@@ -2,8 +2,8 @@ import pandas as pd
 import seaborn as sns
 import numpy as np
 import matplotlib.pyplot as plt
-# import statsmodels.formula.api as smf
-# import statsmodels.api as sm
+import statsmodels.formula.api as smf
+import statsmodels.api as sm
 
 
 
@@ -26,7 +26,7 @@ def compare_performance_consistency():
     """ PLOTTING """
     performance_df_melt = performance_df.reset_index().melt(id_vars='participant')
     g = sns.catplot(x='participant', y='value', hue='variable', kind='bar', palette='muted',
-                    data=performance_df_melt)
+                    data=performance_df_melt, aspect=2)
     plt.title('Best obtained MCC values per abstraction level')
     plt.savefig('{}/{}/{}.png'.format(settings.output_dir, settings.experiment_name, 'performance_scores'), bbox_inches='tight')
     plt.close()
@@ -41,8 +41,9 @@ def compare_performance_consistency():
 
     print(combined_df.to_string())
 
-    # ols_report = smf.ols('average_MCC ~ final_consistency', data=combined_df).fit()
+    ols_report = smf.ols('average_MCC ~ final_consistency', data=combined_df).fit()
     # print(ols_report.summary())
+    print('R2: ', round(ols_report.rsquared, 3))
 
     target_type_order = ['geometry', 'type', 'value']
     for target_type in target_type_order:
@@ -53,16 +54,24 @@ def compare_performance_consistency():
         g.set_ylabels(target_type + ' performance')
         g.set_titles(target_type)
         label_point(combined_df[consistency_type], combined_df[target_type], combined_df.participant, plt.gca())
-        # plt.savefig('{}/{}/{}.png'.format(settings.output_dir, settings.experiment_name, 'regression_{}'.format(target_type)),
-        #             bbox_inches='tight')
+        # if target_type == 'geometry':
+            # plt.ylim([0.6, 1.0])
+            # plt.xlim([-1.5, 1])
+        if target_type == 'type':
+            plt.ylim([0.5, 1.0])
+        if target_type == 'value':
+            plt.ylim([0.5, 1])
+        plt.savefig('{}/{}/{}.png'.format(settings.output_dir, settings.experiment_name, 'performance_consistency_{}'.format(target_type)))
         plt.close()
 
 
-    g = sns.lmplot(x='final_consistency', y='average_MCC', data=combined_df)
+    g = sns.lmplot(x='final_consistency', y='average_MCC', robust=True, data=combined_df)
     plt.title('Performance - Consistency relation')
     label_point(combined_df.final_consistency, combined_df.average_MCC, combined_df.participant, plt.gca())
+    plt.ylim([0.5, 1])
     plt.savefig('{}/{}/{}.png'.format(settings.output_dir, settings.experiment_name, 'performance_consistency'),
                 bbox_inches='tight')
+
     plt.close()
 
 

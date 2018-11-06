@@ -31,6 +31,11 @@ def plot_results(experiment_name):
 
     results_target_type = results.groupby(['participant', 'target_type','SSD']).agg('max').reset_index()
     results_repetition = results.groupby(['participant', 'target_type', 'repetition','SSD']).agg('max').reset_index()
+    results_average = results_repetition.groupby(['participant', 'skill_level','repetition']).agg('mean').reset_index()
+    # P11 --> outlier.
+    results_average.loc[results_average.participant == 11, 'skill_level'] = 'novice'
+
+    results_SSD = results_repetition.groupby(['participant', 'skill_level', 'SSD', 'repetition']).agg('mean').reset_index()
 
     mcc_mean = round(results_target_type.MCC.mean(), 2)
     mcc_mean_all_reps = round(results_repetition.MCC.mean(), 2)
@@ -59,31 +64,46 @@ def plot_results(experiment_name):
     plt.close()
     print('Plot saved')
 
+    # Performance per participant
+    g = sns.catplot(x='participant', y='MCC', kind='box', palette='muted', data=results_repetition)
+    plt.ylim([0, 1.1])
+    plt.savefig('{}/{}_participant_allreps.png'.format(settings.output_dir, experiment_name), bbox_inches='tight')
+    plt.close()
+    print('Plot saved')
+
     # performance per skill level
-    g = sns.catplot(x='skill_level', y='MCC', kind='box', hue='SSD', palette='muted', data=results_target_type)
+    g = sns.catplot(x='skill_level', y='val_acc', kind='box', palette='muted', data=results_average)
     plt.ylim([0, 1.1])
     plt.savefig('{}/{}_skilllevel.png'.format(settings.output_dir, experiment_name), bbox_inches='tight')
     plt.close()
     print('Plot saved')
 
+    # performance SSD condition.
+    g = sns.catplot(x='SSD', y='MCC',hue='skill_level', kind='box', order=['OFF','ON', 'BOTH'], palette='muted', data=results_SSD)
+    plt.ylim([0, 1.1])
+    plt.savefig('{}/{}_ssd_new.png'.format(settings.output_dir, experiment_name), bbox_inches='tight')
+    plt.close()
+    print('Plot saved')
+
     # performance per target type
-    g = sns.catplot(x='target_type', y='MCC', kind='box', hue='SSD', palette='muted', data=results_target_type)
+    g = sns.catplot(x='target_type', y='MCC', kind='box', hue='SSD', hue_order=['OFF', 'ON', 'BOTH'],
+                    palette='muted', data=results_target_type)
     plt.ylim([0, 1.1])
     plt.savefig('{}/{}_targettype.png'.format(settings.output_dir, experiment_name), bbox_inches='tight')
     plt.close()
     print('Plot saved')
 
     # MCC per participant per target type
-    g = sns.catplot(x='target_type', y='MCC', hue='SSD', col='participant', col_wrap=3, kind='box', data=results_repetition,
+    g = sns.catplot(x='target_type', y='MCC', hue='SSD',  hue_order=['OFF', 'ON', 'BOTH'],col='participant',
+                    col_wrap=3, kind='box', data=results_repetition,
                     order=target_type_order, height=3, aspect=1, palette='muted')
     # plt.suptitle('Only best epoch per repetition')
     plt.savefig('{}/{}_{}.png'.format(settings.output_dir, experiment_name, 'catplot'), bbox_inches='tight')
     plt.close()
     print('Plot saved')
 
-
     # MCC and Val ACC per participant over time
-    for metric in ['MCC']:
+    for metric in ['MCC', 'val_acc']:
         g = sns.relplot(x='epoch', y=metric, hue='target_type', col='participant', col_wrap=3, kind='line', data=results,
                         height=3, aspect=1)
         # g.fig.subplots_adjust(top=.9)
@@ -93,6 +113,6 @@ def plot_results(experiment_name):
 
 
 if __name__ == '__main__':
-    experiment_name = 'ssd_test2'
+    experiment_name = 'ssd_test4'
     plot_results(experiment_name)
     # plot_results(settings.experiment_name)

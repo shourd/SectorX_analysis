@@ -21,8 +21,9 @@ def calc_consistency_metric():
     consistency_df = pd.DataFrame()
     for participant in range(1,13):
         commands_p = commands_df[commands_df.participant_id == participant]
-        if commands_p.empty:
-            continue
+
+        # if participant == 5:
+        #     print(commands_p.loc[commands_p.type == 'HDG'].to_string())
 
         """ 1: Type of command """
         spd_commands = len(commands_p[commands_p.type == 'SPD'])

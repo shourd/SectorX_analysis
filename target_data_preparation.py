@@ -86,9 +86,9 @@ def make_categorical_list(command_data, target_type):
         line2 = 45
 
         for command in list(command_data.hdg_rel):
-            if command < line1:
+            if command <= line1:
                 res = 0
-            elif line1 < command < line2:
+            elif line1 < command <= line2:
                 res = 1
             elif command > line2:
                 res = 2

@@ -1,68 +1,114 @@
 import keras
 import numpy as np
 import pandas as pd
+import pickle
 
-from command_predictor import load_model, load_weights, load_test_data
+from command_predictor import load_model, load_weights
 from config import settings
 from strategy_trainer import prepare_training_set
+from radar_plot import make_radar_plot
 
 
-def main():
-    # settings.participants = np.arange(1,13,1)  # [1 .. 12]
+def main(weights='all'):
+    """ SETTINGS """
+    # VALIDATION DATA
+    participant_ids = np.arange(1, 13, 1)
+    # OUTPUT
+    metric = 2  # 1 = accuracy, 2 = MCC
+    # CONDITIONS
     settings.ssd_conditions = ['BOTH']
     target_types = ['type', 'direction', 'value']
 
-    commands, ssd_stack = load_test_data()
-    participant_ids = np.arange(1,13,1)
+    """ START EVALUATION"""
     validation_scores_df = pd.DataFrame()
+    commands, ssd_stack = load_test_data()
 
-    for participant_id in participant_ids:
-        print('Participant', participant_id)
+    streep()
+    print('MODEL TO BE EVALUATED:',weights)
+
+    for validation_participant_id in participant_ids:
+        streep()
+        print('Validation participant data:', validation_participant_id)
+        streep()
+
         participant_scores_dict = {'type': 0, 'direction': 0, 'value': 0}
+
         for target_type in target_types:
-            settings.target_type = target_type
-            class_names = determine_class_names(target_type)
-
-            x_data, y_data = prepare_training_set(ssd_stack, commands, [participant_id])
-
-            model = load_model('test_3classes')
-            model = load_weights(model, '{}_all_general_model.hdf5'.format(target_type))
-
-            prediction = model.predict(x_data)
-            # print(prediction)
-
-            model.compile(loss=keras.losses.categorical_crossentropy,
-                          optimizer=keras.optimizers.Adam(),
-                          metrics=['accuracy', 'matthews_correlation'])
-
-            test_score = model.test_on_batch(x_data, y_data, sample_weight=None)
-            participant_scores_dict[target_type] = [test_score[2]]
-            print('--------------------------------------------------')
+            participant_scores_dict[target_type] = [evaluate_target_type(weights, validation_participant_id,
+                                                                        target_type, ssd_stack, commands)[metric]]
 
         validation_scores_df = validation_scores_df.append(pd.DataFrame.from_dict(participant_scores_dict))
 
-
-        # print(model.metrics_names[2], test_score[2])
-
+    # Finalize dataframe
     validation_scores_df.index = participant_ids
-    validation_scores_df.to_csv('{}/test_scores.csv'.format(settings.output_dir))
+    validation_scores_df.index.name = 'participant'
+    validation_scores_df['average'] = validation_scores_df[target_types].mean(axis=1)
+    validation_scores_df.to_csv('{}/test/test_scores_{}.csv'.format(settings.output_dir, weights))
     print(validation_scores_df.to_string())
 
-        # prediction_dict[target_type] = class_names[int(np.argmax(prediction, axis=1))]
-        # prediction_certainty_dict[target_type+'_certainty'] = round(float(np.max(prediction, axis=1)), 2)
+    return validation_scores_df
 
 
-def determine_class_names(target_type):
-    if target_type == 'type':
-        class_names = ['HDG', 'SPD', 'DCT']
-    elif target_type == 'direction':
-        class_names = ['Left', 'Right']
-    elif target_type == 'value':
-        class_names = ['0-10 deg', '10-45 deg', '> 45 deg']
+def evaluate_target_type(weights, validation_participant_id, target_type, x_data, y_data):
 
-    return class_names
+    x_data, y_data = prepare_training_set(x_data, y_data, [validation_participant_id], target_type)
+
+    model = load_model('model_architecture')
+    model = load_weights(model, '{}_{}.hdf5'.format(target_type, weights))
+
+    model.compile(loss=keras.losses.categorical_crossentropy,
+                  optimizer=keras.optimizers.Adam(),
+                  metrics=['accuracy', 'matthews_correlation'])
+
+    test_score = model.test_on_batch(x_data, y_data, sample_weight=None)
+
+    return test_score  # Val MCC over entire set.
+
+
+def load_test_data():
+    all_data = pickle.load(open(settings.data_folder + settings.input_file, "rb"))
+    commands_df = all_data['commands'].reset_index()
+    commands_df = commands_df[commands_df.ssd_id != 'N/A']
+    ssd_stack = all_data['ssd_images']
+
+    return commands_df, ssd_stack
+
+
+def combine_score_dfs(weights_list):
+    df_baseline = pd.read_csv('{}/test/test_scores_all.csv'.format(settings.output_dir))
+    mcc_general_model = df_baseline.average
+
+    mcc_personal_model_array = np.empty(len(weights_list)-1)
+    for weights in weights_list:
+
+        if weights is 'all':
+            continue
+
+        df_temp = pd.read_csv('{}/test/test_scores_{}.csv'.format(settings.output_dir, weights))
+        mcc_personal_model_array[weights-1] = df_temp[df_temp.participant == weights].average.iloc[0]
+    mcc_personal_model = pd.DataFrame(mcc_personal_model_array, columns=['mcc_personal_model'])
+
+    combined_df = pd.concat([mcc_general_model, mcc_personal_model], axis=1)
+    combined_df.index = np.arange(1, 13, 1)
+    combined_df.index.name = 'participant'
+
+    return combined_df
+
+
+def streep():
+    print('--------------------------------------------------')
 
 
 if __name__ == '__main__':
-    main()
+    # MODEL WEIGHTS:
+    weights_list = ['all', 1, 2]  # 'all' or Participant ID (integer)
+
+    # START
+    for weights in weights_list:
+        scores_df = main(weights)
+        make_radar_plot(scores_df, weights)
+
+    df = combine_score_dfs(weights_list)
+    make_radar_plot(df)
+
 

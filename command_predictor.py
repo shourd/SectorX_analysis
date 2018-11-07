@@ -25,14 +25,8 @@ def main():
                 continue
             model_name = 'test_3classes'
             weights_filename = '{}_all_general_model.hdf5'.format(target_type)
-            if target_type == 'type':
-                class_names = ['HDG', 'SPD', 'DCT']
-            elif target_type == 'direction':
-                if prediction_dict['type'] == 'HDG':
-                    class_names = ['Left', 'Right']
-                # if prediction_dict['type'] == 'SPD':
-            elif target_type == 'value':
-                class_names = ['0-10 deg', '10-45 deg', '> 45 deg']
+
+            class_names = determine_class_names(target_type)
 
             model = load_model(model_name)
             model = load_weights(model, weights_filename)
@@ -78,6 +72,17 @@ def load_test_data():
     ssd_stack = all_data['ssd_images']
 
     return commands_df, ssd_stack
+
+
+def determine_class_names(target_type):
+    if target_type == 'type':
+        class_names = ['HDG', 'SPD', 'DCT']
+    elif target_type == 'direction':
+        class_names = ['Left', 'Right']
+    elif target_type == 'value':
+        class_names = ['0-10 deg', '10-45 deg', '> 45 deg']
+
+    return class_names
 
 
 def show_ssd(ssd_array):

@@ -7,25 +7,28 @@ class Settings:
     ssd_folder = 'data/all_ssd'
     output_dir = 'output'
     serialized_data_filename = "serialized_data.p"
-    input_file = '181101_all_dataframes_3.p'
+    input_file = '181105_all_dataframes_3.p'
 
     # SSD IMPORT SETTINGS
-    convert_background = False
-    remove_grey_noise = False
+    convert_background = True
+    remove_grey_noise = True
     rotate_upwards = True  # rotates the speed vector towards the north
     crop_top = True  # only possible when rotated upwards
     convert_to_greyscale = False
     ssd_import_size = (128, 128)
     save_png_files = True
     ignore_PRV = True
-    export_file = '181101_all_dataframes_3.p'
+    export_file = '181105_all_dataframes_3.p'
 
     # CNN TRAIN SETTINGS
-    experiment_name = 'test'
+    experiment_name = 'test_separation'
     repetitions = 5
-    participants = np.arange(1,13,1)  # [1 .. 12]
-    ssd_conditions = ['ON', 'OFF', 'BOTH']
-    target_types = ['geometry']
+    # participants = np.arange(1,13,1)  # [1 .. 12]
+    participants = [1]
+    run_ids = ['R1', 'R2', 'R3']
+    # ssd_conditions = ['ON', 'OFF', 'BOTH']
+    ssd_conditions = ['BOTH']
+    target_types = ['geometry', 'type', 'direction', 'value']
     load_weights = False # 'direction_all_full_experiment_pooling_rep15'
     train_val_ratio = 0.75
     epochs = 30

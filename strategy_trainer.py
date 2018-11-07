@@ -193,20 +193,22 @@ def ssd_trainer(all_data, participant_ids):
     return confusion_metrics_df
 
 
-def prepare_training_set(ssd_data, command_data, participant_ids):
+def prepare_training_set(ssd_data, command_data,
+                         participant_ids=settings.participants,
+                         run_ids=settings.run_ids):
+    target_type = settings.target_type
     """ FILTER COMMANDS """
-    run_ids = 'all'  #['R1'] #'all'
-    if settings.target_type == 'direction':
+    if target_type == 'direction':
         # todo: check if this is an improvement (+ DCT)
         command_types = ['HDG', 'DCT']
         # command_types = ['HDG']
-    elif settings.target_type == 'geometry':
+    elif target_type == 'geometry':
         command_types = ['HDG', 'SPD']
         command_data = command_data[command_data.preference != 'N/A']
-    elif settings.target_type == 'value':
+    elif target_type == 'value':
         command_types = ['HDG', 'DCT']
         command_data = command_data[command_data.hdg_rel != 'N/A']
-    elif settings.target_type == 'type':
+    elif target_type == 'type':
         command_types = ['HDG', 'SPD', 'DCT']
         settings.num_classes =  len(command_types)
 
@@ -231,7 +233,7 @@ def prepare_training_set(ssd_data, command_data, participant_ids):
     actions_ids = command_data.index.unique()
     x_data = ssd_data[actions_ids, :, :, :]
 
-    target_list = target_data_preparation.make_categorical_list(command_data, settings.target_type)
+    target_list = target_data_preparation.make_categorical_list(command_data, target_type)
 
     y_data = keras.utils.to_categorical(target_list, settings.num_classes)
 

@@ -2,6 +2,7 @@ import pickle
 import time
 
 import pandas as pd
+import matplotlib
 
 from config import settings
 from plot_data import plot_commands
@@ -10,6 +11,9 @@ from process_data import create_dataframes, analyse_commands
 from serialize_data import serialize_data
 from ssd_loader import ssd_loader
 from strategy_trainer import ssd_trainer
+
+
+matplotlib.use('agg')  # fixes a multi-thread issue.
 
 def main():
 
@@ -40,32 +44,32 @@ def main():
 
     # measure training time
     start_time = time.time()
-    metrics_all = pd.DataFrame()
+    metrics_all_df = pd.DataFrame()
 
-    for i_repetition in range(settings.repetitions):
-        settings.current_repetition = i_repetition + 1
+    for target_type in settings.target_types:
+        settings.target_type = target_type
 
-        for target_type in settings.target_types:
-            settings.target_type = target_type
+        for participant in settings.participants:
+            settings.current_participant = participant
+            participant_ids = [participant]
 
-            for participant in settings.participants:
-                settings.current_participant = participant
-                participant_ids = [participant]
+            for ssd_condition in settings.ssd_conditions:
+                settings.ssd = ssd_condition
+                settings.iteration_name = '{}_{}_{}_{}'.format(target_type, participant,
+                                                                     settings.experiment_name,
+                                                                  ssd_condition)
+                print('------------------------------------------------')
+                print('-- Start training:', settings.iteration_name)
+                print('------------------------------------------------')
 
-                for ssd_condition in settings.ssd_conditions:
-                    settings.ssd = ssd_condition
-                    settings.iteration_name = '{}_{}_{}_{}_rep{}'.format(target_type, participant,
-                                                                         settings.experiment_name,
-                                                                      ssd_condition, i_repetition + 1)
-                    print('------------------------------------------------')
-                    print('-- Start training:', settings.iteration_name)
-                    print('------------------------------------------------')
+                """ TRAIN MODEL """
+                metrics_iteration_df = ssd_trainer(all_data, participant_ids)
 
-                    """ TRAIN MODEL """
-                    metrics_run = ssd_trainer(all_data, participant_ids)
-                    if not metrics_run.empty:
-                        metrics_all = metrics_run if metrics_all.empty else metrics_all.append(metrics_run)
-                        metrics_all.to_csv(settings.output_dir + '/metrics_{}.csv'.format(settings.experiment_name))
+                """ SAVE TO DISK """
+                if not metrics_iteration_df.empty:
+                    metrics_all_df = metrics_iteration_df if metrics_all_df.empty else metrics_iteration_df.append(metrics_iteration_df)
+
+                metrics_all_df.to_csv(settings.output_dir + '/metrics_{}.csv'.format(settings.experiment_name))
 
     print('Train time: {} min'.format(round(int(time.time() - start_time) / 60), 1))
     plot_results(settings.experiment_name)

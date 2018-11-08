@@ -29,13 +29,13 @@ def plot_results(experiment_name):
     performance_matrix.to_csv('{}/{}_performance.csv'.format(settings.output_dir, experiment_name))
     # print('Performance metrics saved')
 
-    results_target_type = results.groupby(['participant', 'target_type','SSD']).agg('max').reset_index()
+    results_target_type = results.groupby(['participant', 'target_type','SSD']).agg('mean').reset_index()
     results_repetition = results.groupby(['participant', 'target_type', 'repetition','SSD']).agg('max').reset_index()
     results_average = results_repetition.groupby(['participant', 'skill_level','repetition']).agg('mean').reset_index()
     # P11 --> outlier.
     results_average.loc[results_average.participant == 11, 'skill_level'] = 'novice'
 
-    results_SSD = results_repetition.groupby(['participant', 'skill_level', 'SSD', 'repetition']).agg('mean').reset_index()
+    results_ssd = results_repetition.groupby(['participant', 'skill_level', 'SSD', 'repetition']).agg('mean').reset_index()
 
     mcc_mean = round(results_target_type.MCC.mean(), 2)
     mcc_mean_all_reps = round(results_repetition.MCC.mean(), 2)
@@ -79,7 +79,7 @@ def plot_results(experiment_name):
     print('Plot saved')
 
     # performance SSD condition.
-    g = sns.catplot(x='SSD', y='MCC',hue='skill_level', kind='box', order=['OFF','ON', 'BOTH'], palette='muted', data=results_SSD)
+    g = sns.catplot(x='SSD', y='MCC',hue='skill_level', kind='box', order=['OFF','ON', 'BOTH'], palette='muted', data=results_ssd)
     plt.ylim([0, 1.1])
     plt.savefig('{}/{}_ssd_new.png'.format(settings.output_dir, experiment_name), bbox_inches='tight')
     plt.close()

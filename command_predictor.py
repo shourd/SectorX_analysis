@@ -58,13 +58,6 @@ def load_model(model_name):
         return
 
 
-def load_weights(model, filename_weights):
-    model.load_weights('{}/weights/{}'.format(settings.output_dir, filename_weights))
-    # print("Loaded weights into model.")
-
-    return model
-
-
 def load_test_data():
     all_data = pickle.load(open(settings.data_folder + settings.input_file, "rb"))
     commands_df = all_data['commands'].reset_index()

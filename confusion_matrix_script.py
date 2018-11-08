@@ -45,7 +45,7 @@ def get_confusion_metrics(y_test, y_pred, epoch_no=0,
     informedness = round(balanced_accuracy_score(y_test, y_pred, adjusted=True), 3)
     # http: // scikit - learn.org / stable / modules / model_evaluation.html
 
-    if MCC == 0:
+    if MCC == 2:  # (never)
         plt.figure()
         plt.imshow(cm, interpolation='nearest', cmap=cmap)
         plt.title(title)
@@ -70,6 +70,3 @@ def get_confusion_metrics(y_test, y_pred, epoch_no=0,
         plt.close()
 
     return informedness, F1_score, MCC
-
-
-

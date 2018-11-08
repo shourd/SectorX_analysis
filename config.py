@@ -21,10 +21,10 @@ class Settings:
     export_file = '181105_all_dataframes_3.p'
 
     # CNN TRAIN SETTINGS
-    experiment_name = 'test_separation'
-    repetitions = 5
-    # participants = np.arange(1,13,1)  # [1 .. 12]
-    participants = [1]
+    experiment_name = 'kfold4'
+    repetitions = 5  # kfolds
+    participants = np.arange(1,13,1)  # [1 .. 12]
+    # participants = [1]
     run_ids = ['R1', 'R2', 'R3']
     # ssd_conditions = ['ON', 'OFF', 'BOTH']
     ssd_conditions = ['BOTH']
@@ -40,8 +40,8 @@ class Settings:
     dropout_rate = 0.2
 
     #Callbacks
-    callback_save_model = False  # save model weights to disk
-    callback_tensorboard = True #output log data to tensorboard
+    callback_save_model = True  # save model weights to disk
+    callback_tensorboard = False #output log data to tensorboard
     matthews_correlation_callback = True
     show_model_summary = False
 
@@ -96,4 +96,3 @@ class Settings:
 
 global settings
 settings = Settings()
-

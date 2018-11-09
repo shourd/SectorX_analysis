@@ -27,7 +27,7 @@ def make_radar_plot(df=None, weights='overview'):
 
     ax.set_rlabel_position(0)
     plt.yticks([0.25, 0.50, 0.75, 1], ["0.25", "0.50", "0.75", "1.00"], color="grey", size=7)
-    plt.ylim(0, 1)
+    plt.ylim(0, 0.75)
 
     if weights == 'overview':
         labels = ['General model', 'Personal model']
@@ -41,7 +41,10 @@ def make_radar_plot(df=None, weights='overview'):
         ax.fill(angles, values, 'b', alpha=0.1)
 
     plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
-    plt.title('MCC for testset using a general model', y=1.1)
+    if weights == 'overview':
+        plt.title('MCC of personal models compared to general model', y=1.1)
+    else:
+        plt.title('P{} model tested on all individual test sets'.format(weights), y=1.1)
     plt.savefig('{}/test_scores/spinplot_{}.png'.format(settings.output_dir, weights), bbox_inches='tight')
     plt.close()
 

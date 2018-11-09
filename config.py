@@ -21,16 +21,17 @@ class Settings:
     export_file = '181105_all_dataframes_3.p'
 
     # CNN TRAIN SETTINGS
-    experiment_name = 'kfold4'
-    repetitions = 5  # kfolds
+    experiment_name = 'general_model_capped'
+    repetitions = 5  # number of folds (for cross-validation)
     participants = np.arange(1,13,1)  # [1 .. 12]
-    # participants = [1]
+    participants = ['all']
     run_ids = ['R1', 'R2', 'R3']
     # ssd_conditions = ['ON', 'OFF', 'BOTH']
     ssd_conditions = ['BOTH']
-    target_types = ['geometry', 'type', 'direction', 'value']
+    target_types = ['type', 'direction', 'value']
+    limit_data = True  # only applicable when participant = 'all'!
     load_weights = False # 'direction_all_full_experiment_pooling_rep15'
-    train_val_ratio = 0.75
+    # train_val_ratio = 0.75
     epochs = 30
     batch_size = 32
     rotation_range = 0  # the maximum degree of random rotation for data augmentation

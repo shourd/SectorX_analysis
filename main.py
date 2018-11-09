@@ -12,8 +12,7 @@ from serialize_data import serialize_data
 from ssd_loader import ssd_loader
 from strategy_trainer import ssd_trainer
 
-
-matplotlib.use('agg')  # fixes a multi-thread issue.
+# matplotlib.use('agg')  # fixes a multi-thread issue.
 
 def main():
 
@@ -67,9 +66,8 @@ def main():
 
                 """ SAVE TO DISK """
                 if not metrics_iteration_df.empty:
-                    metrics_all_df = metrics_iteration_df if metrics_all_df.empty else metrics_iteration_df.append(metrics_iteration_df)
-
-                metrics_all_df.to_csv(settings.output_dir + '/metrics_{}.csv'.format(settings.experiment_name))
+                    metrics_all_df = metrics_iteration_df if metrics_all_df.empty else metrics_all_df.append(metrics_iteration_df)
+                    metrics_all_df.to_csv(settings.output_dir + '/metrics_{}.csv'.format(settings.experiment_name))
 
     print('Train time: {} min'.format(round(int(time.time() - start_time) / 60), 1))
     plot_results(settings.experiment_name)

@@ -9,7 +9,6 @@ from config import settings
 
 
 def plot_commands(all_dataframes):
-    # TODO: EFFECT SSD ON CONSISTENCY
     sns.set()
     sns.set_context("notebook")   # smaller: paper
 

@@ -20,6 +20,8 @@ def plot_results(experiment_name):
     # start
     print('Analyzing metrics_{}.csv'.format(experiment_name))
     results = pd.read_csv(settings.output_dir + '/metrics_{}.csv'.format(experiment_name)).reset_index()
+    settings.output_dir = settings.output_dir + '/' + experiment_name
+    makedirs(settings.output_dir, exist_ok=True)
 
     """ CALCULATE RUN PERFORMANCE """
     # calculate performance metric
@@ -41,6 +43,10 @@ def plot_results(experiment_name):
     mcc_mean_all_reps = round(results_repetition.MCC.mean(), 2)
     acc_mean = round(results_repetition.val_acc.mean(), 2)
 
+    """ CALCULATE NUMBER OF SAMPLES PER TARGET PER PARTICIPANT """
+    num_samples_df = results.groupby(['participant', 'target_type']).num_train_samples.agg('max').unstack().reset_index()
+    num_samples_df.to_csv('{}/{}_num_samples.csv'.format(settings.output_dir, experiment_name))
+
     """ PRINT RUN PERFORMANCE """
 
     # PER TARGET TYPE
@@ -54,8 +60,6 @@ def plot_results(experiment_name):
     print('-----------------------')
 
     """ PLOT RUN PERFORMANCE """
-    settings.output_dir = settings.output_dir + '/' + experiment_name
-    makedirs(settings.output_dir, exist_ok=True)
 
     # Performance per participant
     g = sns.catplot(x='participant', y='MCC', kind='box', palette='muted', data=results_target_type)

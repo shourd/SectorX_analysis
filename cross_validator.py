@@ -50,7 +50,7 @@ def main(model_weights='all'):
 
 
 def evaluate_target_type(weights, validation_participant_id, target_type, x_data, y_data):
-    run_ids = ['R4']
+    run_ids = ['R4']  # Important: only used Run 4 as test data. All models have been trained on Runs 1-3
     x_data, y_data = prepare_training_set(x_data, y_data,
                                           participant_ids=[validation_participant_id],
                                           target_type=target_type,
@@ -79,25 +79,30 @@ def load_test_data():
     return commands_df, ssd_stack
 
 
-def combine_score_dfs(weights_list):
+def combine_score_dfs(model_weights_list):
     df_baseline = pd.read_csv('{}/test_scores/test_scores_all.csv'.format(settings.output_dir))
     mcc_general_model = df_baseline.average
 
-    mcc_personal_model_array = np.empty(len(weights_list)-1)
-    for weights in weights_list:
+    mcc_personal_model_array = np.empty(len(model_weights_list) - 1)
+    combined_df = pd.DataFrame()
+    for model_weights in model_weights_list:
 
-        if weights is 'all':
-            continue
+        df_temp = pd.read_csv('{}/test_scores/test_scores_{}.csv'.format(settings.output_dir, model_weights))
+        df_temp['model_participant'] = model_weights
+        combined_df = combined_df.append(df_temp)
 
-        df_temp = pd.read_csv('{}/test_scores/test_scores_{}.csv'.format(settings.output_dir, weights))
-        mcc_personal_model_array[weights-1] = df_temp[df_temp.participant == weights].average.iloc[0]
+        if model_weights != 'all':
+            mcc_personal_model_array[model_weights - 1] = df_temp[df_temp.participant == model_weights].average.iloc[0]
+
+    combined_df.to_csv('{}/test_scores/test_scores_combined.csv'.format(settings.output_dir))
+
     mcc_personal_model = pd.DataFrame(mcc_personal_model_array, columns=['mcc_personal_model'])
 
-    combined_df = pd.concat([mcc_general_model, mcc_personal_model], axis=1)
-    combined_df.index = np.arange(1, 13, 1)
-    combined_df.index.name = 'participant'
+    summary_df = pd.concat([mcc_general_model, mcc_personal_model], axis=1)
+    summary_df.index = np.arange(1, 13, 1)
+    summary_df.index.name = 'participant'
 
-    return combined_df
+    return summary_df
 
 
 def streep():
@@ -106,13 +111,13 @@ def streep():
 
 if __name__ == '__main__':
     # MODEL WEIGHTS:
-    weights_list = ['all', 1, 2]  # 'all' or Participant ID (integer)
+    weights_list = ['all', 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]  # 'all' or Participant ID (integer)
     # settings.run_ids = ['R4']
 
     # START
-    for weights in weights_list:
-        scores_df = main(weights)
-        make_radar_plot(scores_df, weights)
+    # for weights in weights_list:
+    #     scores_df = main(weights)
+    #     make_radar_plot(scores_df, weights)
 
     df = combine_score_dfs(weights_list)
     make_radar_plot(df)

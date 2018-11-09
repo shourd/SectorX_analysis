@@ -15,13 +15,12 @@ from keras.layers.core import Activation
 from keras.models import Sequential
 from keras.preprocessing.image import ImageDataGenerator
 from keras.utils import plot_model
-from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.model_selection import StratifiedKFold
 
 import target_data_preparation
 from config import settings
 from confusion_matrix_script import get_confusion_metrics
 from ssd_loader import ssd_loader
-import command_predictor
 
 # matplotlib.use('agg')  # fixes a multi-thread issue.
 
@@ -209,7 +208,6 @@ def ssd_trainer(all_data, participant_ids):
 
         metrics_fold_dict = metrics.get_data()
         metrics_fold_df = pd.DataFrame.from_dict(metrics_fold_dict)
-        # print(metrics_fold_df)
 
         if not metrics_fold_df.empty:
             metrics_iteration_df = metrics_fold_df if metrics_iteration_df.empty else metrics_iteration_df.append(metrics_fold_df)
@@ -218,25 +216,28 @@ def ssd_trainer(all_data, participant_ids):
 
 
 def prepare_training_set(ssd_data, command_data,
-                         participant_ids = settings.participants,
+                         participant_ids=settings.participants,
                          target_type = settings.target_type,
-                         run_ids = settings.run_ids):
+                         run_ids=settings.run_ids):
 
-    # target_type = settings.target_type
     """ FILTER COMMANDS """
     if target_type == 'direction':
         # todo: check if this is an improvement (+ DCT)
         command_types = ['HDG', 'DCT']
+        data_limit = 165  # average of all participants within this target type
         # command_types = ['HDG']
     elif target_type == 'geometry':
         command_types = ['HDG', 'SPD']
         command_data = command_data[command_data.preference != 'N/A']
+        data_limit = 51
     elif target_type == 'value':
         command_types = ['HDG', 'DCT']
         command_data = command_data[command_data.hdg_rel != 'N/A']
+        data_limit = 215
     elif target_type == 'type':
         command_types = ['HDG', 'SPD', 'DCT']
         settings.num_classes =  len(command_types)
+        data_limit = 132
 
     command_data = command_data[command_data.ssd_id != 'N/A']
     command_data = command_data.reset_index().set_index('ssd_id').sort_index()
@@ -254,6 +255,11 @@ def prepare_training_set(ssd_data, command_data,
         command_data = command_data[command_data.type.isin(command_types)]
     if settings.ssd == 'ON' or settings.ssd == 'OFF':
         command_data = command_data[command_data.SSD == settings.ssd]
+
+    # limit the amount of data only if all data is used to match data set size of participant
+    if settings.limit_data and participant_ids[0] == 'all':
+        command_data = command_data.sample(data_limit)
+        print('Data capped to {} samples (average of participants)!'.format(data_limit))
 
     # filter ssds based on remaining actions
     actions_ids = command_data.index.unique()

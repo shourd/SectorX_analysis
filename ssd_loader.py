@@ -147,16 +147,20 @@ def transform_colors(ssd):
     :return: ssd PIL Image with transformed colors
     """
 
-    from_color = (255, 255, 255)
-    if settings.convert_background:
-        new_background_color = (0, 0, 0)
-    else:
+    if settings.convert_background == 'white':
+        from_color = (0, 0, 0)
         new_background_color = (255, 255, 255)
+    elif settings.convert_background == 'black':
+        from_color = (255, 255, 255)
+        new_background_color = (0, 0, 0)
+    elif settings.convert_background is False:
+        new_background_color = (255, 255, 255)
+
 
     ssd_array = np.array(ssd)  # "data" is a height x width x R x G x B array
     red, green, blue = ssd_array.T # new format: RGB x HW
 
-    if settings.convert_background:
+    if settings.convert_background is not False:
         white_areas = (red == from_color[0]) & (blue == from_color[1]) & (green == from_color[2])
         ssd_array[white_areas.T] = new_background_color
 

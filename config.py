@@ -7,24 +7,24 @@ class Settings:
     ssd_folder = 'data/all_ssd'
     output_dir = 'output'
     serialized_data_filename = "serialized_data.p"
-    input_file = '181105_all_dataframes_3.p'
+    input_file = '181115_all_dataframes_whitebg.p'
 
     # SSD IMPORT SETTINGS
-    convert_background = True
-    remove_grey_noise = True
+    convert_background = 'white'  # 'white' / 'black' / False
+    remove_grey_noise = False
     rotate_upwards = True  # rotates the speed vector towards the north
     crop_top = True  # only possible when rotated upwards
     convert_to_greyscale = False
     ssd_import_size = (128, 128)
     save_png_files = True
     ignore_PRV = True
-    export_file = '181105_all_dataframes_3.p'
+    export_file = '181115_all_dataframes_whitebg.p'
 
     # CNN TRAIN SETTINGS
-    experiment_name = 'general_model_capped'
+    experiment_name = 'deepmind_architecture'
     repetitions = 5  # number of folds (for cross-validation)
-    participants = np.arange(1,13,1)  # [1 .. 12]
-    participants = ['all']
+    # participants = np.arange(1,13,1)  # [1 .. 12]
+    participants = [1]
     run_ids = ['R1', 'R2', 'R3']
     # ssd_conditions = ['ON', 'OFF', 'BOTH']
     ssd_conditions = ['BOTH']
@@ -35,16 +35,16 @@ class Settings:
     epochs = 30
     batch_size = 32
     rotation_range = 0  # the maximum degree of random rotation for data augmentation
-    save_model_structure = True  # save png of model structure to disk
     freeze_layers = False
     reload_data = False
     dropout_rate = 0.2
 
     #Callbacks
-    callback_save_model = True  # save model weights to disk
+    callback_save_model = False  # save model weights to disk
     callback_tensorboard = False #output log data to tensorboard
     matthews_correlation_callback = True
     show_model_summary = False
+    save_model_structure = True  # save png of model structure to disk
 
     # SERIALIZE AND PROCESS SETTINGS
     caution_time = 120          # orange conflict
@@ -58,6 +58,8 @@ class Settings:
     figsize2 = (10, 5)
     figsize3 = (15, 5)
     figsize4 = (20, 5)
+    figsize_article = (5, 2)
+    figsize_article_high = (5, 3)
 
     # inits
     current_participant = 'P0'

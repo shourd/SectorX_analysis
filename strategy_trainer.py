@@ -27,7 +27,10 @@ from ssd_loader import ssd_loader
 def ssd_trainer(all_data, participant_ids):
 
     """ PREPARE TRAINING SET """
-    x_data, y_data = prepare_training_set(all_data['ssd_images'], all_data['commands'], participant_ids)
+    x_data, y_data = prepare_training_set(all_data['ssd_images'], all_data['commands'],
+                                          participant_ids=participant_ids,
+                                          target_type=settings.target_type,
+                                          run_ids=settings.run_ids)
 
     """ SPLIT TRAIN AND VALIDATION DATA """
     # x_train, y_train, x_val, y_val = split_data(x_data, y_data) # my own function.
@@ -289,9 +292,9 @@ def split_data(x_data, y_data):
 def create_model(iteration_name):
     """ CREATING THE NEURAL NETWORK """
     model = Sequential()
-    # model.add(keras.layers.InputLayer(input_shape=settings.ssd_shape))
+    model.add(keras.layers.InputLayer(input_shape=settings.ssd_shape))
 
-    # BASELINE ARCHITECTURE
+    """ BASELINE ARCHITECTURE """
     model.add(Conv2D(32, kernel_size=(2, 2), strides=(1, 1), input_shape=settings.ssd_shape))
     convout = Activation('relu')
     model.add(convout)
@@ -311,6 +314,17 @@ def create_model(iteration_name):
     if settings.dropout_rate != 0:
         model.add(Dropout(settings.dropout_rate))
     model.add(Dense(settings.num_classes, activation='softmax'))
+
+    """ DeepMind model """
+    # model.add(Conv2D(32, kernel_size=(2, 2), strides=(1, 1), activation='relu', input_shape=settings.ssd_shape))
+    # model.add(Conv2D(64, kernel_size=(4, 4), strides=(2, 2), activation='relu'))
+    # model.add(Conv2D(64, kernel_size=(4, 4), strides=(2, 2), activation='relu'))
+    # model.add(Conv2D(64, kernel_size=(3, 3), strides=(1, 1), activation='relu'))
+    # model.add(Flatten())
+    # model.add(Dense(512, activation='relu'))
+    # if settings.dropout_rate != 0:
+    #     model.add(Dropout(settings.dropout_rate))
+    # model.add(Dense(settings.num_classes, activation='softmax'))
 
     # Freeze the first X layers
     if settings.freeze_layers:
@@ -341,7 +355,7 @@ def create_model(iteration_name):
         model.load_weights(weights_filepath, by_name=False)
         print('Weights loaded from: ', weights_filepath)
 
-
+    convout = 1
     return model, convout
 
 

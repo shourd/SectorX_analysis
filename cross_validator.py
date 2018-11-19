@@ -8,6 +8,7 @@ from command_predictor import load_model
 from config import settings
 from strategy_trainer import prepare_training_set
 from radar_plot import make_radar_plot
+from plot_data import set_plot_settings
 
 
 def main(model_weights='all'):
@@ -110,6 +111,7 @@ def streep():
 
 
 if __name__ == '__main__':
+    set_plot_settings()
     # MODEL WEIGHTS:
     weights_list = ['all', 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]  # 'all' or Participant ID (integer)
     # settings.run_ids = ['R4']

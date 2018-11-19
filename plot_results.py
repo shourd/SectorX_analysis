@@ -1,21 +1,27 @@
 from os import makedirs
 
+import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+from plot_data import set_plot_settings
 
 from config import settings
 
 sns.set()
+# matplotlib.use('macOsX')
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 def plot_results(experiment_name):
     # settings
-    target_type_order = ['geometry', 'type', 'direction', 'value']
+    set_plot_settings()
+    sns.set_palette('Blues')
+    # sns.set_context("notebook")
+
+    target_type_order = ['type', 'direction', 'value']
     # metric_list = ['MCC', 'val_acc', 'val_F1_score', 'val_informedness']
-    sns.set_context("notebook")
 
     # start
     print('Analyzing metrics_{}.csv'.format(experiment_name))
@@ -23,25 +29,33 @@ def plot_results(experiment_name):
     settings.output_dir = settings.output_dir + '/' + experiment_name
     makedirs(settings.output_dir, exist_ok=True)
 
+
+    """ REMOVE GEOMETRY"""
+    results = results[results.target_type != 'geometry']
+
+
     """ CALCULATE RUN PERFORMANCE """
     # calculate performance metric
-    # results['performance'] = (results.MCC + results.val_F1_score + results.val_acc + results.val_informedness)/4
-    performance_matrix = results.groupby(['participant', 'target_type']).MCC.agg('max').unstack().reset_index()
-    performance_matrix['average_MCC'] = performance_matrix.loc[:, target_type_order].mean(axis=1)
+    performance_matrix = results.groupby(['participant', 'target_type', 'repetition']).MCC.agg('max').unstack().reset_index()
+    performance_matrix['average_MCC'] = performance_matrix.loc[:, results.repetition.unique()].mean(axis=1)
     performance_matrix.to_csv('{}/{}_performance.csv'.format(settings.output_dir, experiment_name))
     # print('Performance metrics saved')
 
-    results_target_type = results.groupby(['participant', 'target_type','SSD']).agg('mean').reset_index()
-    results_repetition = results.groupby(['participant', 'target_type', 'repetition','SSD']).agg('max').reset_index()
-    results_average = results_repetition.groupby(['participant', 'skill_level','repetition']).agg('mean').reset_index()
+    # results_target_type = results.groupby(['participant', 'target_type','SSD']).agg('mean').reset_index()
+    results_per_kfold = results.groupby(['skill_level','participant', 'target_type', 'repetition','SSD']).agg('max').reset_index()
+    results_per_kfold.drop(['index', 'Unnamed: 0', 'epoch'], axis=1, inplace=True)
+
+    results_avg_kfold = results_per_kfold.groupby(['skill_level','participant', 'target_type','SSD']).agg('mean').reset_index()
+    results_avg_kfold.drop(['repetition'], axis=1, inplace=True)
+
+    # results_average = results_repetition.groupby(['participant', 'skill_level','repetition']).agg('mean').reset_index()
     # P11 --> outlier.
-    results_average.loc[results_average.participant == 11, 'skill_level'] = 'novice'
+    # results_average.loc[results_average.participant == 11, 'skill_level'] = 'novice'
+    # results_ssd = results_repetition.groupby(['participant', 'skill_level', 'SSD', 'repetition']).agg('mean').reset_index()
 
-    results_ssd = results_repetition.groupby(['participant', 'skill_level', 'SSD', 'repetition']).agg('mean').reset_index()
-
-    mcc_mean = round(results_target_type.MCC.mean(), 2)
-    mcc_mean_all_reps = round(results_repetition.MCC.mean(), 2)
-    acc_mean = round(results_repetition.val_acc.mean(), 2)
+    mcc_mean = round(results_per_kfold.MCC.mean(), 2)
+    mcc_mean_all_reps = round(results_avg_kfold.MCC.mean(), 2)
+    acc_mean = round(results_per_kfold.val_acc.mean(), 2)
 
     """ CALCULATE NUMBER OF SAMPLES PER TARGET PER PARTICIPANT """
     num_samples_df = results.groupby(['participant', 'target_type']).num_train_samples.agg('max').unstack().reset_index()
@@ -53,47 +67,84 @@ def plot_results(experiment_name):
     print('-----------------------')
     print('Mean MCC per type: ', end='')
     for target_type in target_type_order:
-        mean = round(results_target_type[results_target_type.target_type == target_type].MCC.mean(), 2)
+        mean = round(results_per_kfold[results_per_kfold.target_type == target_type].MCC.mean(), 2)
         print('[{}: {}]'.format(target_type, mean), end=' ')
 
     print('\nAverage best MCC: {} ({}). Average accuracy: {}'.format(mcc_mean, mcc_mean_all_reps, acc_mean))
     print('-----------------------')
 
     """ PLOT RUN PERFORMANCE """
+    sns.set('paper', 'darkgrid', rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8, 'axes.titlesize': 10,
+                                     'xtick.labelsize': 8,
+                                     'ytick.labelsize': 8, "pgf.rcfonts": False})
+    plt.rc('font', **{'family': 'serif', 'serif': ['Times']})
 
     # Performance per participant
-    g = sns.catplot(x='participant', y='MCC', kind='box', palette='muted', data=results_target_type)
-    plt.ylim([0, 1.1])
-    plt.savefig('{}/{}_participant.png'.format(settings.output_dir, experiment_name), bbox_inches='tight')
+    fig, ax = plt.subplots(1, 1, figsize=settings.figsize_article)
+    sns.boxplot(x='participant', y='MCC', palette='Blues', data=results_per_kfold,
+                linewidth=1, fliersize=2, ax=ax)
+    ax.set_ylim([0, 1.1])
+    ax.set_xlabel('Participant')
+    plt.savefig('{}/{}_participant.pdf'.format(settings.output_dir, experiment_name), bbox_inches='tight')
+    plt.savefig('{}/perf_participant.pgf'.format(settings.output_dir), bbox_inches='tight')
     plt.close()
     print('Plot saved')
 
-    # Performance per participant
-    g = sns.catplot(x='participant', y='MCC', kind='box', palette='muted', data=results_repetition)
-    plt.ylim([0, 1.1])
-    plt.savefig('{}/{}_participant_allreps.png'.format(settings.output_dir, experiment_name), bbox_inches='tight')
-    plt.close()
-    print('Plot saved')
-
-    # performance per skill level
-    g = sns.catplot(x='skill_level', y='val_acc', kind='box', palette='muted', data=results_average)
-    plt.ylim([0, 1.1])
-    plt.savefig('{}/{}_skilllevel.png'.format(settings.output_dir, experiment_name), bbox_inches='tight')
-    plt.close()
-    print('Plot saved')
-
-    # performance SSD condition.
-    g = sns.catplot(x='SSD', y='MCC',hue='skill_level', kind='box', order=['OFF','ON', 'BOTH'], palette='muted', data=results_ssd)
-    plt.ylim([0, 1.1])
-    plt.savefig('{}/{}_ssd_new.png'.format(settings.output_dir, experiment_name), bbox_inches='tight')
-    plt.close()
-    print('Plot saved')
 
     # performance per target type
-    g = sns.catplot(x='target_type', y='MCC', kind='box', hue='SSD', hue_order=['OFF', 'ON', 'BOTH'],
-                    palette='muted', data=results_target_type)
+    # g = sns.catplot(x='target_type', y='MCC', kind='box', hue='SSD', hue_order=['OFF', 'ON', 'BOTH'],
+    #                 palette='muted', data=results_target_type)
+    fig, ax = plt.subplots(1, 1, figsize=settings.figsize_article)
+    sns.boxplot(x='target_type', y='MCC', ax=ax, linewidth=1, fliersize=2,
+                    palette='Blues', data=results_avg_kfold)
     plt.ylim([0, 1.1])
-    plt.savefig('{}/{}_targettype.png'.format(settings.output_dir, experiment_name), bbox_inches='tight')
+    ax.set_xlabel('Abstraction level')
+    plt.savefig('{}/{}_targettype.pdf'.format(settings.output_dir, experiment_name), bbox_inches='tight')
+    plt.savefig('{}/perf_target_type.pgf'.format(settings.output_dir), bbox_inches='tight')
+    plt.close()
+    print('Plot saved')
+
+    """ CONDITIONS """
+
+    # # performance per skill level
+    # fig, ax = plt.subplots(1, 1, figsize=settings.figsize_article)
+    # sns.boxplot(x='skill_level', order=['novice', 'intermediate'], y='MCC', palette='Blues', linewidth=1, fliersize=2, data=results_avg_kfold, ax=ax)
+    # plt.ylim([0, 1.1])
+    # ax.set_xlabel('Skill level')
+    # plt.savefig('{}/{}_skilllevel.pdf'.format(settings.output_dir, experiment_name), bbox_inches='tight')
+    # plt.savefig('{}/perf_skill_level.pgf'.format(settings.output_dir), bbox_inches='tight')
+    # plt.close()
+    # print('Plot saved')
+
+    # performance per condition
+    fig, ax = plt.subplots(1, 1, figsize=settings.figsize_article)
+    sns.boxplot(x='SSD', order=['OFF','ON', 'BOTH'], y='MCC', hue='skill_level', hue_order=['novice', 'intermediate'],
+                palette='Blues', linewidth=1, fliersize=2,
+                data=results_avg_kfold, ax=ax)
+    plt.ylim([0, 1.1])
+    ax.legend_.set_title('Skill level')
+    plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=2)
+    plt.savefig('{}/{}_conditions.pdf'.format(settings.output_dir, experiment_name), bbox_inches='tight')
+    plt.savefig('{}/perf_conditions.pgf'.format(settings.output_dir), bbox_inches='tight')
+    plt.close()
+    print('Plot saved')
+
+
+    """ OVER TIME """
+    fig, ax = plt.subplots(1, 1, figsize=settings.figsize_article_high)
+    sns.lineplot(x='epoch', y='MCC', hue='target_type', hue_order=['type', 'direction', 'value'],
+                palette='muted', data=results[results.participant == 1], ax=ax, legend='brief')
+    # plt.ylim([0, 1.1])
+    # plt.xlim([1, 15])
+    ax.set_xlabel('Epoch')
+    leg_handles = ax.get_legend_handles_labels()[0]
+    leg_handles = leg_handles[1:]
+    legend_labels = ['Type', 'Direction', 'Value']
+    plt.legend(leg_handles, legend_labels, loc='lower right', bbox_to_anchor=(1, 1), ncol=4)
+    # ax.legend(leg_handles, ['Training', 'Validation'], title='Data type')
+
+    plt.savefig('{}/{}_epochs_p1.pdf'.format(settings.output_dir, experiment_name), bbox_inches='tight')
+    plt.savefig('{}/perf_epochs_p1.pgf'.format(settings.output_dir), bbox_inches='tight')
     plt.close()
     print('Plot saved')
 
@@ -117,6 +168,6 @@ def plot_results(experiment_name):
 
 
 if __name__ == '__main__':
-    experiment_name = 'ssd_test4'
+    experiment_name = 'kfold7'
     plot_results(experiment_name)
     # plot_results(settings.experiment_name)

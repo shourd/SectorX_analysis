@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from math import pi
 import seaborn as sns
-sns.set()
 
 def make_radar_plot(df=None, weights='overview'):
     # Set data
@@ -19,6 +18,7 @@ def make_radar_plot(df=None, weights='overview'):
     angles = [n / float(N) * 2 * pi for n in range(N)]
     angles += angles[:1]
 
+    fig, ax = plt.subplots(figsize=(settings.figsize_article[0], 3))
     ax = plt.subplot(111, polar=True)
     ax.set_theta_offset(pi / 2)
     ax.set_theta_direction(-1)
@@ -41,11 +41,12 @@ def make_radar_plot(df=None, weights='overview'):
         ax.fill(angles, values, 'b', alpha=0.1)
 
     plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
-    if weights == 'overview':
-        plt.title('MCC of personal models compared to general model', y=1.1)
-    else:
-        plt.title('P{} model tested on all individual test sets'.format(weights), y=1.1)
-    plt.savefig('{}/test_scores/spinplot_{}.png'.format(settings.output_dir, weights), bbox_inches='tight')
+    # if weights == 'overview':
+    #     plt.title('MCC of personal models compared to general model', y=1.1)
+    # else:
+    #     plt.title('P{} model tested on all individual test sets'.format(weights), y=1.1)
+    plt.savefig('{}/test_scores/spinplot_{}.pgf'.format(settings.output_dir, weights), bbox_inches='tight')
+    plt.savefig('{}/test_scores/spinplot_{}.pdf'.format(settings.output_dir, weights), bbox_inches='tight')
     plt.close()
 
 

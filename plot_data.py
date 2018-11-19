@@ -9,8 +9,8 @@ from config import settings
 
 
 def plot_commands(all_dataframes):
-    sns.set()
-    sns.set_context("notebook")   # smaller: paper
+    sns.set_palette('Blues')
+    # plt.rc('text', usetex=True)
 
     os.makedirs(os.path.dirname(settings.data_folder + 'figures/extra'), exist_ok=True)
     df_commands = all_dataframes['commands'].reset_index()
@@ -20,21 +20,33 @@ def plot_commands(all_dataframes):
     df_commands = df_commands[df_commands.type != 'TOC']
     df_commands = df_commands[df_commands.ssd_id != 'N/A']
 
-    # sns.set_palette("GnBu_d")
+
 
     """ COUNT OF ALL COMMANDS """
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=settings.figsize3)
+    # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=settings.figsize_article)
+    fig, ax1 = plt.subplots(1, 1, figsize=settings.figsize_article)
     sns.countplot(data=df_commands, x='participant_id', hue='run_id', ax=ax1)
-    sns.countplot(data=df_commands[df_commands.type != 'N/A'], x='participant_id', hue='type', ax=ax2)
-    sns.countplot(data=df_commands, x='participant_id', hue='SSD', ax=ax3)
-    fig.suptitle('Command Count per Run')
-    # ax1.set_title('Subtitle')
-    # ax2.set_title('Subtitle')
+    ax1.legend_.set_title('Run')
     ax1.set_xlabel('Particpant ID')
-    ax2.set_xlabel('Participant ID')
-    ax3.set_xlabel('Participant ID')
-    plt.savefig(settings.data_folder + 'figures/command_count.png', bbox_inches='tight')
+    ax1.set_ylabel('Command count')
+
+    plt.savefig(settings.data_folder + 'figures/command_count_run.pdf', bbox_inches='tight')
+    plt.savefig(settings.data_folder + 'figures/command_count_run.pgf', bbox_inches='tight')
     plt.close()
+
+    fig, ax2 = plt.subplots(1, 1, figsize=settings.figsize_article)
+    sns.countplot(data=df_commands[df_commands.type != 'N/A'], x='participant_id', hue='type', ax=ax2)
+    ax2.legend_.set_title('Type')
+    ax2.set_xlabel('Participant ID')
+    ax2.set_ylabel('Command count')
+
+    plt.savefig(settings.data_folder + 'figures/command_count_type.pdf', bbox_inches='tight')
+    plt.savefig(settings.data_folder + 'figures/command_count_type.pgf', bbox_inches='tight')
+    plt.close()
+
+    # sns.countplot(data=df_commands, x='participant_id', hue='SSD', ax=ax3)
+    # ax3.set_xlabel('Participant ID')
+    # ax3.set_ylabel('Command count')
 
     """ COMMAND TYPE PER CONDITION """
     fig, (ax1) = plt.subplots(1, 1, figsize=settings.figsize1)
@@ -46,25 +58,53 @@ def plot_commands(all_dataframes):
     plt.savefig(settings.data_folder + 'figures/command_type.png', bbox_inches='tight')
     plt.close()
 
-    """ DIRECTION AND CONTROL PREFERENCE """
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=settings.figsize3)
+    # """ DIRECTION AND CONTROL PREFERENCE """
+    # fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=settings.figsize3)
+    # data_direction = df_commands[(df_commands.direction != 'N/A')]
+    # data_direction = data_direction[(data_direction.direction != 'revert')]
+    # data_direction_spd = data_direction[data_direction.type == 'SPD']
+    # data_direction_hdg = data_direction[data_direction.type == 'HDG']
+    # data_geometry = df_commands[df_commands.preference != 'N/A']
+    # data_geometry = data_geometry[data_geometry.type.isin(['HDG', 'SPD'])]
+    # sns.countplot(data=data_direction_spd, x='participant_id', hue='direction', hue_order=['decrease', 'increase'], ax=ax1)
+    # sns.countplot(data=data_direction_hdg, x='participant_id', hue='direction', hue_order=['left', 'right'], ax=ax2)
+    # sns.countplot(data=data_geometry, x='participant_id', hue='preference', ax=ax3)
+    # fig.suptitle('Command preferences')
+    # ax1.set_title('Direction (Speed)')
+    # ax2.set_title('Direction (Heading)')
+    # ax3.set_title('Geometry')
+    # ax1.set_xlabel('Particpant ID')
+    # ax2.set_xlabel('Participant ID')
+    # plt.savefig(settings.data_folder + 'figures/command_preferences.png', bbox_inches='tight')
+    # plt.close()
+
+    """ DIRECTION """
     data_direction = df_commands[(df_commands.direction != 'N/A')]
-    data_direction = data_direction[(data_direction.direction != 'revert')]
-    data_direction_spd = data_direction[data_direction.type == 'SPD']
     data_direction_hdg = data_direction[data_direction.type == 'HDG']
-    data_geometry = df_commands[df_commands.preference != 'N/A']
-    data_geometry = data_geometry[data_geometry.type.isin(['HDG', 'SPD'])]
-    sns.countplot(data=data_direction_spd, x='participant_id', hue='direction', hue_order=['decrease', 'increase'], ax=ax1)
-    sns.countplot(data=data_direction_hdg, x='participant_id', hue='direction', hue_order=['left', 'right'], ax=ax2)
-    sns.countplot(data=data_geometry, x='participant_id', hue='preference', ax=ax3)
-    fig.suptitle('Command preferences')
-    ax1.set_title('Direction (Speed)')
-    ax2.set_title('Direction (Heading)')
-    ax3.set_title('Geometry')
-    ax1.set_xlabel('Particpant ID')
-    ax2.set_xlabel('Participant ID')
-    plt.savefig(settings.data_folder + 'figures/command_preferences.png', bbox_inches='tight')
+    fig, ax = plt.subplots(1,1, figsize=settings.figsize_article)
+    sns.countplot(data=data_direction_hdg, x='participant_id', hue='direction', hue_order=['left', 'right'], ax=ax)
+    ax.set_xlabel('Participant ID')
+    ax.set_ylabel('HDG command count')
+    ax.legend_.set_title('Direction')
+    plt.savefig(settings.data_folder + 'figures/command_count_direction.pdf', bbox_inches='tight')
+    plt.savefig(settings.data_folder + 'figures/command_count_direction.pgf', bbox_inches='tight')
     plt.close()
+
+    """ RELATIVE HEADING """
+    hdg_commands = df_commands[df_commands.type == 'HDG']
+    pd.options.mode.chained_assignment = None  # surprsses the copy warning from following statement:
+    # hdg_commands.loc[:, 'hdg_rel'] = hdg_commands.hdg_rel.apply(lambda x: custom_round(x, base=20)).abs()
+    hdg_commands.loc[:, 'hdg_rel'] = hdg_commands.hdg_rel.apply(lambda x: custom_round(x, base=20))
+    pd.options.mode.chained_assignment = 'warn'
+
+    fig, ax = plt.subplots(1, 1, figsize=settings.figsize_article)
+    sns.countplot(data=hdg_commands, x='hdg_rel', palette='Blues', ax=ax)
+    ax.set_xlabel('Relative heading [deg]')
+    ax.set_ylabel('HDG command count')
+    plt.savefig(settings.data_folder + 'figures/command_count_value.pdf', bbox_inches='tight')
+    plt.savefig(settings.data_folder + 'figures/command_count_value.pgf', bbox_inches='tight')
+    plt.close()
+    print('DONE')
 
     # """ COMMAND VALUES"""
     # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=settings.figsize2)
@@ -83,10 +123,6 @@ def plot_commands(all_dataframes):
     # plt.close()
 
     """ FACTOR PLOT COMMAND VALUES (ABSOLUTE HEADING) """
-    hdg_commands = df_commands[df_commands.type == 'HDG']
-    pd.options.mode.chained_assignment = None # surprsses the copy warning from following statement:
-    hdg_commands.loc[:, 'value'] = hdg_commands.value.apply(lambda x: custom_round(x, base=20))
-    pd.options.mode.chained_assignment = 'warn'
     sns.catplot(x='value', col='participant_id', col_wrap=3, data=hdg_commands, kind='count', palette='muted')
     plt.savefig(settings.data_folder + 'figures/extra/facet_rel_hdg.png', bbox_inches='tight')
     plt.close()
@@ -150,9 +186,14 @@ def plot_traffic(all_dataframes):
     plt.savefig(settings.data_folder + 'figures/scatter.png', bbox_inches='tight')
     plt.show()
 
-    ''' poging 2 '''
-    # round x and y to nearest 10. count in buckets then make heatmap.
 
+def set_plot_settings():
+    sns.set()
+    sns.set_context("notebook")   # smaller: paper
+    sns.set('paper', 'white', rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8, 'axes.titlesize': 10,
+                                  'xtick.labelsize': 8,
+                                  'ytick.labelsize': 8, "pgf.rcfonts": False})
+    plt.rc('font', **{'family': 'serif', 'serif': ['Times']})
 
 #
 #         ''' AIRCRAFT TYPE '''
@@ -184,38 +225,11 @@ def plot_traffic(all_dataframes):
 #         # if settings.show_plots:
 #         #     plt.show()
 
-# def write_to_csv():
-    # Create csv file en initialize a writer
-    # File names
-    # csv_filename = 'data/processed_data.csv'
-    #
-    # # CSV content
-    # csv_header = ["Participant",
-    #               "Subject",
-    #               "Scenario",
-    #               "SectorCoordinates",
-    #               "Total commands",
-    #               "numOfHDG",
-    #               "numOfSPD"]
-    #
-    # csv_file = open(csv_filename, "w", newline="")
-    # csv_writer = csv.writer(csv_file, delimiter=",")
-    #
-    # # Write header line
-    # csv_writer.writerow(csv_header)
-    #
-    # # csv_writer.writerow([controller.participant,
-    # #                      run.subject,
-    # #                      run.scenario.file,
-    # #                      sector_points,
-    # #                      num_commands, num_hdg, num_spd])
-    # csv_file.close()
-
 
 if __name__ == "__main__":
 
     # try:
-    all_data = pickle.load(open(settings.data_folder + '181101_all_dataframes_3.p', "rb"))
+    all_data = pickle.load(open(settings.data_folder + '181105_all_dataframes_3.p', "rb"))
     #     print('Data loaded from Pickle')
     #     print('Start plotting')
     plot_commands(all_data)

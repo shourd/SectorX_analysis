@@ -9,7 +9,14 @@ from config import settings
 
 
 def plot_commands(all_dataframes):
+    sns.set()
+    sns.set_context("notebook")   # smaller: paper
+    sns.set('paper', 'whitegrid', rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8, 'axes.titlesize': 10,
+                                  'xtick.labelsize': 8,
+                                  'ytick.labelsize': 8, "pgf.rcfonts": False})
+    plt.rc('font', **{'family': 'serif', 'serif': ['Times']})
     sns.set_palette('Blues')
+
     # plt.rc('text', usetex=True)
 
     os.makedirs(os.path.dirname(settings.data_folder + 'figures/extra'), exist_ok=True)
@@ -27,18 +34,22 @@ def plot_commands(all_dataframes):
     fig, ax1 = plt.subplots(1, 1, figsize=settings.figsize_article)
     sns.countplot(data=df_commands, x='participant_id', hue='run_id', ax=ax1)
     ax1.legend_.set_title('Run')
-    ax1.set_xlabel('Particpant ID')
+    ax1.set_xlabel('Particpant')
     ax1.set_ylabel('Command count')
 
     plt.savefig(settings.data_folder + 'figures/command_count_run.pdf', bbox_inches='tight')
     plt.savefig(settings.data_folder + 'figures/command_count_run.pgf', bbox_inches='tight')
     plt.close()
 
+
+    """ TYPE """
     fig, ax2 = plt.subplots(1, 1, figsize=settings.figsize_article)
     sns.countplot(data=df_commands[df_commands.type != 'N/A'], x='participant_id', hue='type', ax=ax2)
     ax2.legend_.set_title('Type')
-    ax2.set_xlabel('Participant ID')
+    ax2.set_xlabel('Participant')
     ax2.set_ylabel('Command count')
+
+    plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=4, title='Type')
 
     plt.savefig(settings.data_folder + 'figures/command_count_type.pdf', bbox_inches='tight')
     plt.savefig(settings.data_folder + 'figures/command_count_type.pgf', bbox_inches='tight')
@@ -52,8 +63,6 @@ def plot_commands(all_dataframes):
     fig, (ax1) = plt.subplots(1, 1, figsize=settings.figsize1)
     sns.countplot(data=df_commands, x='type', hue='SSD', ax=ax1)
     fig.suptitle('Command Count per Run')
-    # ax1.set_title('Subtitle')
-    # ax2.set_title('Subtitle')
     ax1.set_xlabel('Command type')
     plt.savefig(settings.data_folder + 'figures/command_type.png', bbox_inches='tight')
     plt.close()
@@ -66,8 +75,10 @@ def plot_commands(all_dataframes):
     # data_direction_hdg = data_direction[data_direction.type == 'HDG']
     # data_geometry = df_commands[df_commands.preference != 'N/A']
     # data_geometry = data_geometry[data_geometry.type.isin(['HDG', 'SPD'])]
-    # sns.countplot(data=data_direction_spd, x='participant_id', hue='direction', hue_order=['decrease', 'increase'], ax=ax1)
-    # sns.countplot(data=data_direction_hdg, x='participant_id', hue='direction', hue_order=['left', 'right'], ax=ax2)
+    # sns.countplot(data=data_direction_spd, x='participant_id', hue='direction',
+    # hue_order=['decrease', 'increase'], ax=ax1)
+    # sns.countplot(data=data_direction_hdg, x='participant_id', hue='direction',
+    # hue_order=['left', 'right'], ax=ax2)
     # sns.countplot(data=data_geometry, x='participant_id', hue='preference', ax=ax3)
     # fig.suptitle('Command preferences')
     # ax1.set_title('Direction (Speed)')
@@ -83,12 +94,16 @@ def plot_commands(all_dataframes):
     data_direction_hdg = data_direction[data_direction.type == 'HDG']
     fig, ax = plt.subplots(1,1, figsize=settings.figsize_article)
     sns.countplot(data=data_direction_hdg, x='participant_id', hue='direction', hue_order=['left', 'right'], ax=ax)
-    ax.set_xlabel('Participant ID')
-    ax.set_ylabel('HDG command count')
     ax.legend_.set_title('Direction')
+    ax.set_xlabel('Participant')
+    ax.set_ylabel('HDG command count')
+
+    plt.legend(['Left', 'Right'], loc='lower right', bbox_to_anchor=(1, 1), ncol=4, title='Direction')
+
     plt.savefig(settings.data_folder + 'figures/command_count_direction.pdf', bbox_inches='tight')
     plt.savefig(settings.data_folder + 'figures/command_count_direction.pgf', bbox_inches='tight')
     plt.close()
+    print('DONE')
 
     """ RELATIVE HEADING """
     hdg_commands = df_commands[df_commands.type == 'HDG']
@@ -98,7 +113,7 @@ def plot_commands(all_dataframes):
     pd.options.mode.chained_assignment = 'warn'
 
     fig, ax = plt.subplots(1, 1, figsize=settings.figsize_article)
-    sns.countplot(data=hdg_commands, x='hdg_rel', palette='Blues', ax=ax)
+    sns.countplot(data=hdg_commands, x='hdg_rel', color=(146/255,187/255,211/255), ax=ax)
     ax.set_xlabel('Relative heading [deg]')
     ax.set_ylabel('HDG command count')
     plt.savefig(settings.data_folder + 'figures/command_count_value.pdf', bbox_inches='tight')
@@ -186,14 +201,6 @@ def plot_traffic(all_dataframes):
     plt.savefig(settings.data_folder + 'figures/scatter.png', bbox_inches='tight')
     plt.show()
 
-
-def set_plot_settings():
-    sns.set()
-    sns.set_context("notebook")   # smaller: paper
-    sns.set('paper', 'white', rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8, 'axes.titlesize': 10,
-                                  'xtick.labelsize': 8,
-                                  'ytick.labelsize': 8, "pgf.rcfonts": False})
-    plt.rc('font', **{'family': 'serif', 'serif': ['Times']})
 
 #
 #         ''' AIRCRAFT TYPE '''

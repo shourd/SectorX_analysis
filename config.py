@@ -7,27 +7,27 @@ class Settings:
     ssd_folder = 'data/all_ssd'
     output_dir = 'output'
     serialized_data_filename = "serialized_data.p"
-    input_file = '181115_all_dataframes_whitebg.p'
+    input_file = '181121_all_dataframes_crop_64.p'
 
     # SSD IMPORT SETTINGS
-    convert_background = 'white'  # 'white' / 'black' / False
+    convert_background = False  # 'white' / 'black' / False
     remove_grey_noise = False
     rotate_upwards = True  # rotates the speed vector towards the north
     crop_top = True  # only possible when rotated upwards
     convert_to_greyscale = False
-    ssd_import_size = (128, 128)
+    ssd_import_size = (64, 64)
     save_png_files = True
     ignore_PRV = True
-    export_file = '181115_all_dataframes_whitebg.p'
+    export_file = '181121_all_dataframes_crop_nonoise.p'
 
     # CNN TRAIN SETTINGS
-    experiment_name = 'deepmind_architecture'
+    experiment_name = 'paper_full'
     repetitions = 5  # number of folds (for cross-validation)
-    # participants = np.arange(1,13,1)  # [1 .. 12]
-    participants = [1]
+    participants = np.arange(1,13,1)  # [1 .. 12]
+    # participants = [1]
     run_ids = ['R1', 'R2', 'R3']
-    # ssd_conditions = ['ON', 'OFF', 'BOTH']
-    ssd_conditions = ['BOTH']
+    ssd_conditions = ['ON', 'OFF', 'BOTH']
+    # ssd_conditions = ['BOTH']
     target_types = ['type', 'direction', 'value']
     limit_data = True  # only applicable when participant = 'all'!
     load_weights = False # 'direction_all_full_experiment_pooling_rep15'

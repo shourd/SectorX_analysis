@@ -5,6 +5,15 @@ from math import pi
 import seaborn as sns
 
 def make_radar_plot(df=None, weights='overview'):
+    # plot settings
+    sns.set()
+    sns.set_context("notebook")   # smaller: paper
+    sns.set('paper', 'darkgrid', rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8, 'axes.titlesize': 10,
+                                  'xtick.labelsize': 8,
+                                  'ytick.labelsize': 8, "pgf.rcfonts": False})
+    plt.rc('font', **{'family': 'serif', 'serif': ['Times']})
+    # sns.set_palette('Blues')
+
     # Set data
     if df is None:
         print('Provide DataFrame')
@@ -26,11 +35,12 @@ def make_radar_plot(df=None, weights='overview'):
     plt.xticks(angles[:-1], participants)
 
     ax.set_rlabel_position(0)
-    plt.yticks([0.25, 0.50, 0.75, 1], ["0.25", "0.50", "0.75", "1.00"], color="grey", size=7)
+    plt.yticks([0, 0.25, 0.50, 0.75, 1.00], ["0", "0.25", "0.50", "0.75 MCC", "1.00"], color="grey", size=7)
     plt.ylim(0, 0.75)
+    # ax.xaxis.grid(True, color='grey', linestyle='-')
 
     if weights == 'overview':
-        labels = ['General model', 'Personal model']
+        labels = ['General model', 'Individual model']
     else:
         labels = ['Type', 'Direction', 'Value']
 

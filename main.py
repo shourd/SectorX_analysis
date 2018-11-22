@@ -1,8 +1,10 @@
 import pickle
+import random
 import time
 
+import numpy as np
 import pandas as pd
-import matplotlib
+from tensorflow import set_random_seed
 
 from config import settings
 from plot_data import plot_commands
@@ -13,6 +15,12 @@ from ssd_loader import ssd_loader
 from strategy_trainer import ssd_trainer
 
 # matplotlib.use('agg')  # fixes a multi-thread issue.
+
+""" SET RANDOM SEED """
+random.seed(1)  # python
+np.random.seed(1)  # numpy
+set_random_seed(1)  # tensorflow
+
 
 def main():
 

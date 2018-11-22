@@ -1,12 +1,11 @@
 from os import makedirs
 
-import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-from plot_data import set_plot_settings
 
 from config import settings
+import numpy as np
 
 sns.set()
 # matplotlib.use('macOsX')
@@ -16,12 +15,8 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 def plot_results(experiment_name):
     # settings
-    set_plot_settings()
     sns.set_palette('Blues')
-    # sns.set_context("notebook")
-
     target_type_order = ['type', 'direction', 'value']
-    # metric_list = ['MCC', 'val_acc', 'val_F1_score', 'val_informedness']
 
     # start
     print('Analyzing metrics_{}.csv'.format(experiment_name))
@@ -29,29 +24,25 @@ def plot_results(experiment_name):
     settings.output_dir = settings.output_dir + '/' + experiment_name
     makedirs(settings.output_dir, exist_ok=True)
 
-
-    """ REMOVE GEOMETRY"""
+    # remove geometry if existing
     results = results[results.target_type != 'geometry']
-
 
     """ CALCULATE RUN PERFORMANCE """
     # calculate performance metric
-    performance_matrix = results.groupby(['participant', 'target_type', 'repetition']).MCC.agg('max').unstack().reset_index()
-    performance_matrix['average_MCC'] = performance_matrix.loc[:, results.repetition.unique()].mean(axis=1)
-    performance_matrix.to_csv('{}/{}_performance.csv'.format(settings.output_dir, experiment_name))
-    # print('Performance metrics saved')
+    results_temp = results[results.SSD == 'BOTH']
+    performance_matrix = results_temp.groupby(['participant', 'target_type', 'repetition']).MCC.agg('max').unstack().reset_index()
+    performance_matrix['mean_MCC'] = performance_matrix.loc[:, results.repetition.unique()].mean(axis=1)
+    performance_matrix = performance_matrix.pivot(index='participant', columns='target_type', values='mean_MCC')
+    performance_matrix['mean_MCC'] = performance_matrix.loc[:, target_type_order].mean(axis=1)
+    performance_matrix.to_csv('{}/performance.csv'.format(settings.output_dir, experiment_name))
+    print('Performance metrics saved')
 
-    # results_target_type = results.groupby(['participant', 'target_type','SSD']).agg('mean').reset_index()
     results_per_kfold = results.groupby(['skill_level','participant', 'target_type', 'repetition','SSD']).agg('max').reset_index()
     results_per_kfold.drop(['index', 'Unnamed: 0', 'epoch'], axis=1, inplace=True)
 
-    results_avg_kfold = results_per_kfold.groupby(['skill_level','participant', 'target_type','SSD']).agg('mean').reset_index()
-    results_avg_kfold.drop(['repetition'], axis=1, inplace=True)
-
-    # results_average = results_repetition.groupby(['participant', 'skill_level','repetition']).agg('mean').reset_index()
-    # P11 --> outlier.
-    # results_average.loc[results_average.participant == 11, 'skill_level'] = 'novice'
-    # results_ssd = results_repetition.groupby(['participant', 'skill_level', 'SSD', 'repetition']).agg('mean').reset_index()
+    results_avg_kfold_all_ssd = results_per_kfold.groupby(['skill_level','participant', 'target_type','SSD']).agg('mean').reset_index()
+    results_avg_kfold_all_ssd.drop(['repetition'], axis=1, inplace=True)
+    results_avg_kfold = results_avg_kfold_all_ssd[results_avg_kfold_all_ssd.SSD == 'BOTH']
 
     mcc_mean = round(results_per_kfold.MCC.mean(), 2)
     mcc_mean_all_reps = round(results_avg_kfold.MCC.mean(), 2)
@@ -81,9 +72,9 @@ def plot_results(experiment_name):
 
     # Performance per participant
     fig, ax = plt.subplots(1, 1, figsize=settings.figsize_article)
-    sns.boxplot(x='participant', y='MCC', palette='Blues', data=results_per_kfold,
+    sns.boxplot(x='participant', y='MCC', color=(146/255,187/255,211/255), saturation=1, data=results_per_kfold,
                 linewidth=1, fliersize=2, ax=ax)
-    ax.set_ylim([0, 1.1])
+    # ax.set_ylim([0, 1.1])
     ax.set_xlabel('Participant')
     plt.savefig('{}/{}_participant.pdf'.format(settings.output_dir, experiment_name), bbox_inches='tight')
     plt.savefig('{}/perf_participant.pgf'.format(settings.output_dir), bbox_inches='tight')
@@ -92,8 +83,6 @@ def plot_results(experiment_name):
 
 
     # performance per target type
-    # g = sns.catplot(x='target_type', y='MCC', kind='box', hue='SSD', hue_order=['OFF', 'ON', 'BOTH'],
-    #                 palette='muted', data=results_target_type)
     fig, ax = plt.subplots(1, 1, figsize=settings.figsize_article)
     sns.boxplot(x='target_type', y='MCC', ax=ax, linewidth=1, fliersize=2,
                     palette='Blues', data=results_avg_kfold)
@@ -105,22 +94,20 @@ def plot_results(experiment_name):
     print('Plot saved')
 
     """ CONDITIONS """
-
-    # # performance per skill level
-    # fig, ax = plt.subplots(1, 1, figsize=settings.figsize_article)
-    # sns.boxplot(x='skill_level', order=['novice', 'intermediate'], y='MCC', palette='Blues', linewidth=1, fliersize=2, data=results_avg_kfold, ax=ax)
-    # plt.ylim([0, 1.1])
-    # ax.set_xlabel('Skill level')
-    # plt.savefig('{}/{}_skilllevel.pdf'.format(settings.output_dir, experiment_name), bbox_inches='tight')
-    # plt.savefig('{}/perf_skill_level.pgf'.format(settings.output_dir), bbox_inches='tight')
-    # plt.close()
-    # print('Plot saved')
+    # data output
+    target_type = 'type'
+    novice = results_avg_kfold[(results_avg_kfold.skill_level == 'novice') & (results_avg_kfold.target_type == target_type)].MCC
+    intermediate = results_avg_kfold[(results_avg_kfold.skill_level == 'intermediate') & (results_avg_kfold.target_type == target_type)].MCC
+    print('Novice')
+    print(list(novice))
+    print('Intermediate')
+    print(list(intermediate))
 
     # performance per condition
     fig, ax = plt.subplots(1, 1, figsize=settings.figsize_article)
     sns.boxplot(x='SSD', order=['OFF','ON', 'BOTH'], y='MCC', hue='skill_level', hue_order=['novice', 'intermediate'],
                 palette='Blues', linewidth=1, fliersize=2,
-                data=results_avg_kfold, ax=ax)
+                data=results_avg_kfold_all_ssd, ax=ax)
     plt.ylim([0, 1.1])
     ax.legend_.set_title('Skill level')
     plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=2)
@@ -135,7 +122,7 @@ def plot_results(experiment_name):
     sns.lineplot(x='epoch', y='MCC', hue='target_type', hue_order=['type', 'direction', 'value'],
                 palette='muted', data=results[results.participant == 1], ax=ax, legend='brief')
     # plt.ylim([0, 1.1])
-    # plt.xlim([1, 15])
+    plt.xlim([1, 25])
     ax.set_xlabel('Epoch')
     leg_handles = ax.get_legend_handles_labels()[0]
     leg_handles = leg_handles[1:]
@@ -149,11 +136,10 @@ def plot_results(experiment_name):
     print('Plot saved')
 
     # MCC per participant per target type
-    g = sns.catplot(x='target_type', y='MCC', hue='SSD',  hue_order=['OFF', 'ON', 'BOTH'],col='participant',
-                    col_wrap=3, kind='box', data=results_repetition,
+    sns.catplot(x='target_type', y='MCC', hue='SSD',  hue_order=['OFF', 'ON', 'BOTH'],col='participant',
+                    col_wrap=3, kind='box', data=results_per_kfold,
                     order=target_type_order, height=3, aspect=1, palette='muted')
-    # plt.suptitle('Only best epoch per repetition')
-    plt.savefig('{}/{}_{}.png'.format(settings.output_dir, experiment_name, 'catplot'), bbox_inches='tight')
+    plt.savefig('{}/{}_{}.pdf'.format(settings.output_dir, experiment_name, 'catplot'), bbox_inches='tight')
     plt.close()
     print('Plot saved')
 
@@ -162,12 +148,12 @@ def plot_results(experiment_name):
         g = sns.relplot(x='epoch', y=metric, hue='target_type', col='participant', col_wrap=3, kind='line', data=results,
                         height=3, aspect=1)
         # g.fig.subplots_adjust(top=.9)
-        plt.savefig('{}/{}_epochs_{}.png'.format(settings.output_dir, experiment_name, metric), bbox_inches='tight')
+        plt.savefig('{}/{}_epochs_{}.pdf'.format(settings.output_dir, experiment_name, metric), bbox_inches='tight')
         plt.close()
         print('{} values saved'.format(metric))
 
 
 if __name__ == '__main__':
-    experiment_name = 'kfold7'
+    experiment_name = settings.experiment_name  # 'paper_crop_64_2'
     plot_results(experiment_name)
     # plot_results(settings.experiment_name)

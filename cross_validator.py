@@ -1,3 +1,5 @@
+""" TESTS ALL MODELS AGAINST ALL TEST DATA AND PLOTS 1 RADAR PLOT PER PARTICIPANT """
+
 import glob
 import pickle
 
@@ -57,8 +59,8 @@ def evaluate_target_type(weights, validation_participant_id, target_type, x_data
                                           target_type=target_type,
                                           run_ids=run_ids)
 
-    model = load_model('model_architecture_3class')
-    filepath_weights = glob.glob('{}/weights/{}_{}*.hdf5'.format(settings.output_dir, target_type, weights))
+    model = load_model('paper_full2')
+    filepath_weights = glob.glob('{}/weights/{}_{}_*.hdf5'.format(settings.output_dir, target_type, weights))
     if len(filepath_weights) > 1: print('MULTIPLE WEIGHTS FOR SAME MODEL DETECTED')
     model.load_weights(filepath_weights[0])
 
@@ -111,10 +113,9 @@ def streep():
 
 
 if __name__ == '__main__':
-    # set_plot_settings()
+
     # MODEL WEIGHTS:
     weights_list = ['all', 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]  # 'all' or Participant ID (integer)
-    # settings.run_ids = ['R4']
 
     # START
     # for weights in weights_list:

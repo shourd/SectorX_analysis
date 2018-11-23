@@ -1,5 +1,5 @@
 # facet_radar_plot.py
-
+import warnings
 from math import pi
 
 import matplotlib.pyplot as plt
@@ -11,8 +11,10 @@ from config import settings
 sns.set()
 sns.set_context("paper")
 
+warnings.simplefilter(action='ignore', category=UserWarning)
+
 def main():
-    plot_type = 'normal'  # or 'average'
+    plot_type = 'average'  # or 'average'
     df_combined = pd.read_csv('{}/test_scores/test_scores_combined.csv'.format(settings.output_dir))
 
     # plot settings
@@ -34,7 +36,7 @@ def main():
     plt.savefig('{}/test_scores/radar_plot_P{}.pdf'.format(settings.output_dir, participant_id), bbox_inches='tight')
     plt.savefig('{}/test_scores/radar_plot_P{}.pgf'.format(settings.output_dir, participant_id), bbox_inches='tight')
     plt.close()
-    print('DONE')
+    print('Single plot DONE')
 
     """ FACET PLOT """
     plt.figure(figsize=(8, 10))
@@ -47,6 +49,7 @@ def main():
 
     plt.tight_layout()
     plt.savefig('{}/test_scores/facet_radar_plot_{}.pdf'.format(settings.output_dir, plot_type), bbox_inches='tight')
+    print('Facet Plot DONE')
 
 
 def make_spider(model_participant_id, df, radar_type, single_plot=False):

@@ -13,6 +13,7 @@ from process_data import create_dataframes, analyse_commands
 from serialize_data import serialize_data
 from ssd_loader import ssd_loader
 from strategy_trainer import ssd_trainer
+from toolset import remove_redundant_weights
 
 # matplotlib.use('agg')  # fixes a multi-thread issue.
 
@@ -80,6 +81,7 @@ def main():
     print('Train time: {} min'.format(round(int(time.time() - start_time) / 60), 1))
     plot_results(settings.experiment_name)
 
+    remove_redundant_weights.main()  # only keeps the models with the best validation MCC.
 
 if __name__ == "__main__":
     main()

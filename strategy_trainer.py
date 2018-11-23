@@ -239,6 +239,12 @@ def prepare_training_set(ssd_data, command_data,
         data_limit = 215
     elif target_type == 'type':
         command_types = ['HDG', 'SPD', 'DCT']
+        # filter all SPD = 250 commands (is revert back at end of sector)
+        command_data = command_data[
+            (command_data.type == 'HDG') |
+            (command_data.type == 'DCT') |
+            ((command_data.type == 'SPD') & (command_data.value != 250))
+        ]
         settings.num_classes =  len(command_types)
         data_limit = 132
 

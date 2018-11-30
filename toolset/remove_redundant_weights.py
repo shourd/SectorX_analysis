@@ -5,21 +5,24 @@ from os import remove
 
 def main():
     output_dir = 'output/weights/'
+    target_types = ['direction', 'type', 'value']
 
-    target_types = ['direction', 'geometry', 'type', 'value']
-    participant_ids = np.arange(1,13,1)
+    participant_ids = ['all', 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    ssd_conditions = ['ON', 'OFF', 'BOTH']
 
-    for target_type in target_types:
-        for participant_id in participant_ids:
-            path = output_dir + '{}_{}.hdf5'.format(target_type, participant_id)
-            # print(path)
-            file_list = glob.glob(output_dir + '{}_{}_*.hdf5'.format(target_type, participant_id))
-            file_list.sort(reverse=True)
-            try:
-                files_to_be_deleted = file_list[1:]
-                delete_files(files_to_be_deleted)
-            except:
-                print('List contains no files.')
+    for ssd_condition in ssd_conditions:
+        for target_type in target_types:
+            for participant_id in participant_ids:
+                file_list = glob.glob(output_dir + '{}_{}_*_{}_*.hdf5'.format(
+                    target_type,
+                    participant_id,
+                    ssd_condition))
+                file_list.sort(reverse=True)
+                try:
+                    files_to_be_deleted = file_list[1:]
+                    delete_files(files_to_be_deleted)
+                except:
+                    print('List contains no files.')
     return
 
 

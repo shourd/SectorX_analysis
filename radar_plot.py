@@ -1,4 +1,5 @@
 """ CREATES RADARPLOT FROM DATAFRAME AND SAVES AS PDF/PGF """
+import warnings
 
 from config import settings
 import matplotlib.pyplot as plt
@@ -6,7 +7,9 @@ import pandas as pd
 from math import pi
 import seaborn as sns
 
-def make_radar_plot(df=None, weights='overview'):
+warnings.simplefilter(action='ignore', category=UserWarning)
+
+def make_radar_plot(df=None, weights='overview', metric='MCC'):
     # plot settings
     sns.set()
     sns.set_context("notebook")   # smaller: paper
@@ -29,7 +32,7 @@ def make_radar_plot(df=None, weights='overview'):
     angles = [n / float(N) * 2 * pi for n in range(N)]
     angles += angles[:1]
 
-    fig, ax = plt.subplots(figsize=(settings.figsize_article[0], 3))
+    fig, ax = plt.subplots(figsize=(settings.figsize_article[0], 2.5))
     ax = plt.subplot(111, polar=True)
     ax.set_theta_offset(pi / 2)
     ax.set_theta_direction(-1)
@@ -37,7 +40,7 @@ def make_radar_plot(df=None, weights='overview'):
     plt.xticks(angles[:-1], participants)
 
     ax.set_rlabel_position(0)
-    plt.yticks([0, 0.25, 0.50, 0.75, 1.00], ["0", "0.25", "0.50", "0.75", "1.00 MCC"], color="grey", size=7)
+    plt.yticks([0, 0.25, 0.50, 0.75, 1.00], ["0", "0.25", "0.50", "0.75", "1.00 {}".format(metric)], color="grey", size=7)
     plt.ylim(0, 1)
     # ax.xaxis.grid(True, color='grey', linestyle='-')
 
@@ -52,13 +55,11 @@ def make_radar_plot(df=None, weights='overview'):
         ax.plot(angles, values, linewidth=1, linestyle='solid', label=labels[i_column])
         ax.fill(angles, values, 'b', alpha=0.1)
 
-    plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
-    # if weights == 'overview':
-    #     plt.title('MCC of personal models compared to general model', y=1.1)
-    # else:
-    #     plt.title('P{} model tested on all individual test sets'.format(weights), y=1.1)
-    plt.savefig('{}/test_scores/spinplot_{}.pgf'.format(settings.output_dir, weights), bbox_inches='tight')
-    plt.savefig('{}/test_scores/spinplot_{}.pdf'.format(settings.output_dir, weights), bbox_inches='tight')
+    # plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
+    plt.legend(loc='lower right', bbox_to_anchor=(1.2, 1.2), ncol=2)
+    if settings.save_as_pgf:
+        plt.savefig('{}/test_scores/spinplot_{}_{}.pgf'.format(settings.output_dir, weights, metric), bbox_inches='tight')
+    plt.savefig('{}/test_scores/spinplot_{}_{}.pdf'.format(settings.output_dir, weights, metric), bbox_inches='tight')
     plt.close()
 
 

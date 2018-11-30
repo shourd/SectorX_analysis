@@ -14,13 +14,15 @@ from serialize_data import serialize_data
 from ssd_loader import ssd_loader
 from strategy_trainer import ssd_trainer
 from toolset import remove_redundant_weights
+import auto_validator
+from performance_consistency_comparison import compare_performance_consistency
 
 # matplotlib.use('agg')  # fixes a multi-thread issue.
 
 """ SET RANDOM SEED """
-random.seed(1)  # python
-np.random.seed(1)  # numpy
-set_random_seed(1)  # tensorflow
+random.seed(settings.seed)  # python
+np.random.seed(settings.seed)  # numpy
+set_random_seed(settings.seed)  # tensorflow
 
 
 def main():
@@ -78,10 +80,18 @@ def main():
                     metrics_all_df = metrics_iteration_df if metrics_all_df.empty else metrics_all_df.append(metrics_iteration_df)
                     metrics_all_df.to_csv(settings.output_dir + '/metrics_{}.csv'.format(settings.experiment_name))
 
+        if settings.callback_save_model:
+            remove_redundant_weights.main()
+
+
     print('Train time: {} min'.format(round(int(time.time() - start_time) / 60), 1))
     plot_results(settings.experiment_name)
 
-    remove_redundant_weights.main()  # only keeps the models with the best validation MCC.
+    if settings.callback_save_model and settings.participants != ['all']:
+        remove_redundant_weights.main()    # only keeps the models with the best validation MCC.
+        auto_validator.main()
+        compare_performance_consistency()
+
 
 if __name__ == "__main__":
     main()

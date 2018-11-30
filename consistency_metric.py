@@ -85,35 +85,48 @@ def calc_consistency_metric():
     # add skill level
     # skill_level_list = ['novice' if (p in np.arange(1,7,1)) or (p == 11) else 'intermediate' for p in consistency_df.participant]
     skill_level_list = ['novice' if (p in np.arange(1, 7, 1)) else 'intermediate' for p in consistency_df.participant]
-    skill_level_list[10] = 'outlier'
+    # skill_level_list[10] = 'outlier'
     consistency_df_normalized['skill_level'] = skill_level_list
 
     print(consistency_df_normalized.to_string())
 
 
     """ PLOTTING """
+    consistency_df_normalized.rename(columns={'type_consistency': 'Type', 'direction_consistency': 'Direction',
+                                              'value_consistency': 'Value', 'mean_consistency': 'Mean'}, inplace=True)
     consistency_df_melt = consistency_df_normalized.melt(id_vars=['participant', 'skill_level'])
+    consistency_df_melt.rename(columns={'variable': 'target_type'}, inplace=True)
+
+
     sns.set('paper', 'darkgrid', rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8, 'axes.titlesize': 10,
                                      'xtick.labelsize': 8,
                                      'ytick.labelsize': 8, "pgf.rcfonts": False})
     plt.rc('font', **{'family': 'serif', 'serif': ['Times']})
 
     fig, ax = plt.subplots(1, 1, figsize=settings.figsize_article)
-    sns.barplot(data=consistency_df_melt, x='participant', y='value', hue='variable', palette='Blues', ax=ax)
+    sns.barplot(data=consistency_df_melt, x='participant', y='value', hue='target_type', palette='Blues', ax=ax)
     ax.set_xlabel('Participant')
     ax.set_ylabel('Consistency (normalized)')
-    labels = ['Type', 'Direction', 'Value', 'Mean']
-    leg_handles = ax.get_legend_handles_labels()[0]
-    plt.legend(leg_handles, labels, loc='lower right', bbox_to_anchor=(1, 1), ncol=4)
+    plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=4)
     plt.savefig('{}/consistency/{}.pdf'.format(settings.output_dir, 'consistency_scores'), bbox_inches='tight')
-    plt.savefig('{}/consistency/{}.pgf'.format(settings.output_dir, 'consistency_scores'),
-                bbox_inches='tight')
+    if settings.save_as_pgf:
+        plt.savefig('{}/consistency/{}.pgf'.format(settings.output_dir, 'consistency_scores'), bbox_inches='tight')
     plt.close()
 
-    g = sns.catplot(data=consistency_df_melt, x='skill_level', order=['novice','intermediate'], y='value', hue='variable', kind='box', palette='muted')
-    plt.title('Consistency scores per abstraction level per skill level')
+
+    # CONSISTENCY PER SKILL LEVEL
+    fig, ax = plt.subplots(1, 1, figsize=settings.figsize_article)
+    g = sns.boxplot(data=consistency_df_melt, x='target_type', y='value', hue='skill_level',
+                    hue_order=['novice','intermediate'],
+                    palette='Blues', linewidth=1, fliersize=2, ax=ax)
+    ax.set_xlabel('Skill Level')
+    ax.set_ylabel('Consistency (normalized)')
+    plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=2)
     plt.savefig('{}/consistency/{}.pdf'.format(settings.output_dir, 'consistency_scores_skill'),
                 bbox_inches='tight')
+    if settings.save_as_pgf:
+        plt.savefig('{}/consistency/{}.pgf'.format(settings.output_dir, 'consistency_scores_skill'),
+                    bbox_inches='tight')
     plt.close()
 
 def normalize_consistency(x, y):

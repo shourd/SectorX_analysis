@@ -10,7 +10,7 @@ import numpy as np
 sns.set()
 # matplotlib.use('macOsX')
 import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter(action='ignore', category=(FutureWarning, UserWarning))
 
 
 def plot_results(experiment_name):
@@ -77,7 +77,8 @@ def plot_results(experiment_name):
     # ax.set_ylim([0, 1.1])
     ax.set_xlabel('Participant')
     plt.savefig('{}/{}_participant.pdf'.format(settings.output_dir, experiment_name), bbox_inches='tight')
-    plt.savefig('{}/perf_participant.pgf'.format(settings.output_dir), bbox_inches='tight')
+    # if settings.save_as_pgf:
+    #     plt.savefig('{}/perf_participant.pgf'.format(settings.output_dir), bbox_inches='tight')
     plt.close()
     print('Plot saved')
 
@@ -89,7 +90,8 @@ def plot_results(experiment_name):
     plt.ylim([0, 1.1])
     ax.set_xlabel('Abstraction level')
     plt.savefig('{}/{}_targettype.pdf'.format(settings.output_dir, experiment_name), bbox_inches='tight')
-    plt.savefig('{}/perf_target_type.pgf'.format(settings.output_dir), bbox_inches='tight')
+    # if settings.save_as_pgf:
+    #     plt.savefig('{}/perf_target_type.pgf'.format(settings.output_dir), bbox_inches='tight')
     plt.close()
     print('Plot saved')
 
@@ -98,21 +100,37 @@ def plot_results(experiment_name):
     target_type = 'type'
     novice = results_avg_kfold[(results_avg_kfold.skill_level == 'novice') & (results_avg_kfold.target_type == target_type)].MCC
     intermediate = results_avg_kfold[(results_avg_kfold.skill_level == 'intermediate') & (results_avg_kfold.target_type == target_type)].MCC
-    print('Novice')
+    print('Novice mcc values:')
     print(list(novice))
-    print('Intermediate')
+    print('Intermediate mcc values:')
     print(list(intermediate))
 
-    # performance per condition
+    # Skill level per target type
     fig, ax = plt.subplots(1, 1, figsize=settings.figsize_article)
-    sns.boxplot(x='SSD', order=['OFF','ON', 'BOTH'], y='MCC', hue='skill_level', hue_order=['novice', 'intermediate'],
+    sns.boxplot(x='target_type', order=['type', 'direction', 'value'], y='MCC', hue='skill_level', hue_order=['novice', 'intermediate'],
                 palette='Blues', linewidth=1, fliersize=2,
                 data=results_avg_kfold_all_ssd, ax=ax)
     plt.ylim([0, 1.1])
-    ax.legend_.set_title('Skill level')
-    plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=2)
-    plt.savefig('{}/{}_conditions.pdf'.format(settings.output_dir, experiment_name), bbox_inches='tight')
-    plt.savefig('{}/perf_conditions.pgf'.format(settings.output_dir), bbox_inches='tight')
+    plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=2, title='Skill level')
+    ax.set_xlabel('Abstraction level')
+    plt.savefig('{}/{}_skill_level.pdf'.format(settings.output_dir, experiment_name), bbox_inches='tight')
+    if settings.save_as_pgf:
+        plt.savefig('{}/perf_skill_level.pgf'.format(settings.output_dir), bbox_inches='tight')
+    plt.close()
+    print('Plot saved')
+
+    # SSD per target type
+    fig, ax = plt.subplots(1, 1, figsize=settings.figsize_article)
+    sns.boxplot(x='target_type', order=['type', 'direction', 'value'], y='MCC', hue='SSD', hue_order=['OFF', 'ON'],
+                palette='Blues', linewidth=1, fliersize=2,
+                data=results_avg_kfold_all_ssd, ax=ax)
+    plt.ylim([0, 1.1])
+    ax.legend_.set_title('SSD')
+    plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=3, title='SSD')
+    ax.set_xlabel('Abstraction level')
+    plt.savefig('{}/{}_conditions_ssd.pdf'.format(settings.output_dir, experiment_name), bbox_inches='tight')
+    if settings.save_as_pgf:
+        plt.savefig('{}/perf_conditions_ssd.pgf'.format(settings.output_dir), bbox_inches='tight')
     plt.close()
     print('Plot saved')
 
@@ -131,7 +149,8 @@ def plot_results(experiment_name):
     # ax.legend(leg_handles, ['Training', 'Validation'], title='Data type')
 
     plt.savefig('{}/{}_epochs_p1.pdf'.format(settings.output_dir, experiment_name), bbox_inches='tight')
-    plt.savefig('{}/perf_epochs_p1.pgf'.format(settings.output_dir), bbox_inches='tight')
+    if settings.save_as_pgf:
+        plt.savefig('{}/perf_epochs_p1.pgf'.format(settings.output_dir), bbox_inches='tight')
     plt.close()
     print('Plot saved')
 
@@ -154,6 +173,6 @@ def plot_results(experiment_name):
 
 
 if __name__ == '__main__':
-    experiment_name = settings.experiment_name  # 'paper_crop_64_2'
+    experiment_name = 'paper_seed2' #settings.experiment_name  # 'paper_crop_64_2'
     plot_results(experiment_name)
     # plot_results(settings.experiment_name)

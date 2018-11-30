@@ -14,7 +14,7 @@ sns.set_context("paper")
 warnings.simplefilter(action='ignore', category=UserWarning)
 
 def main():
-    plot_type = 'average'  # or 'average'
+    plot_type = 'normal'  # or 'average'
     df_combined = pd.read_csv('{}/test_scores/test_scores_combined.csv'.format(settings.output_dir))
 
     # plot settings
@@ -28,13 +28,14 @@ def main():
     df_combined.type.loc[df_combined.type < 0] = 0  # convert negative numbers to zero for better looking plots.
 
     """ SINGLE PARTICIPANT PLOT """
-    participant_id = 6
-    participant_df = df_combined.loc[df_combined.model_participant == str(participant_id)]
+    participant_id = 1
+    participant_df = df_combined.loc[df_combined.model_participant == participant_id]
     make_spider(model_participant_id=participant_id, df=participant_df, radar_type=plot_type, single_plot=True)
     plt.legend(loc='lower right', bbox_to_anchor=(1.2, 1.2), ncol=3)
     plt.tight_layout()
     plt.savefig('{}/test_scores/radar_plot_P{}.pdf'.format(settings.output_dir, participant_id), bbox_inches='tight')
-    plt.savefig('{}/test_scores/radar_plot_P{}.pgf'.format(settings.output_dir, participant_id), bbox_inches='tight')
+    if settings.save_as_pgf:
+        plt.savefig('{}/test_scores/radar_plot_P{}.pgf'.format(settings.output_dir, participant_id), bbox_inches='tight')
     plt.close()
     print('Single plot DONE')
 
@@ -42,7 +43,7 @@ def main():
     plt.figure(figsize=(8, 10))
 
     for participant_id in range(1,13):
-        participant_df = df_combined.loc[df_combined.model_participant == str(participant_id)]
+        participant_df = df_combined.loc[df_combined.model_participant == participant_id]
         make_spider(model_participant_id=participant_id, df=participant_df, radar_type=plot_type)
         if participant_id == 3:
             plt.legend(loc='lower left', bbox_to_anchor=(1, 1))

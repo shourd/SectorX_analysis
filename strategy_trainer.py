@@ -57,7 +57,8 @@ def ssd_trainer(all_data, participant_ids):
 
         print('----------- FOLD: {}: {} train samples, {} validation samples ------------'
               .format(settings.current_repetition, len(y_train), len(y_val)))
-
+        print('Iteration name:', settings.iteration_name)
+        
         # print(y_train.shape)
         """ LOAD MODEL """
         # model, layer = create_model(settings)
@@ -238,6 +239,7 @@ def prepare_training_set(ssd_data, command_data,
         command_data = command_data[command_data.hdg_rel != 'N/A']
         data_limit = 215
     elif target_type == 'type':
+        # todo: clean up
         command_types = ['HDG', 'SPD', 'DCT']
         # filter all SPD = 250 commands (is revert back at end of sector)
         command_data = command_data[

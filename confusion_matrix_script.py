@@ -9,10 +9,11 @@ from sklearn.metrics import confusion_matrix, matthews_corrcoef, f1_score, \
 from config import settings
 
 
-def get_confusion_metrics(y_test, y_pred, epoch_no=0,
+def get_confusion_metrics(y_test, y_pred,
                           normalize=False,
-                          title='Confusion matrix',
-                          cmap=plt.cm.Blues):
+                          save_figure=False,
+                          participant=0,
+                          target_type=''):
     """
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
@@ -22,7 +23,7 @@ def get_confusion_metrics(y_test, y_pred, epoch_no=0,
 
 
     cm = confusion_matrix(y_test, y_pred)
-
+    normalize = False
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
         print("Normalized confusion matrix")
@@ -45,10 +46,10 @@ def get_confusion_metrics(y_test, y_pred, epoch_no=0,
     informedness = round(balanced_accuracy_score(y_test, y_pred, adjusted=True), 3)
     # http: // scikit - learn.org / stable / modules / model_evaluation.html
 
-    if MCC == 2:  # (never)
+    if save_figure:
+        cmap = plt.cm.Blues
         plt.figure()
         plt.imshow(cm, interpolation='nearest', cmap=cmap)
-        plt.title(title)
         plt.colorbar()
         tick_marks = np.arange(len(settings.class_names))
         plt.xticks(tick_marks, settings.class_names, rotation=45)
@@ -66,7 +67,7 @@ def get_confusion_metrics(y_test, y_pred, epoch_no=0,
         plt.tight_layout()
         plt.grid(b=False)
 
-        plt.savefig(settings.output_dir + '/figures/confusion_{}.png'.format(settings.iteration_name, epoch_no))
+        plt.savefig(settings.output_dir + '/test_scores/confusion/confusion_{}_{}.pdf'.format(participant, target_type))
         plt.close()
 
     return informedness, F1_score, MCC

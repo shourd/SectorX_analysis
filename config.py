@@ -24,14 +24,15 @@ class Settings:
     seed = 1
     experiment_name = 'paper_seed2'
     repetitions = 5  # number of folds (for cross-validation)
-    participants = np.arange(1,13,1)  # [1 .. 12]
-    participants = ['all']
+    participants = np.arange(1, 13, 1)  # [1 .. 12]
+    participants = [6]
     run_ids = ['R1', 'R2', 'R3']
     ssd_conditions = ['ON', 'OFF', 'BOTH']
     ssd_conditions = ['BOTH']
     target_types = ['type', 'direction', 'value']
+    target_types = ['direction_spd']
     limit_data = True  # only applicable when participant = 'all'!
-    load_weights = False # 'direction_all_full_experiment_pooling_rep15'
+    load_weights = False  # 'direction_all_full_experiment_pooling_rep15'
     epochs = 30
     batch_size = 32
     rotation_range = 0  # the maximum degree of random rotation for data augmentation
@@ -40,7 +41,7 @@ class Settings:
     dropout_rate = 0.2
 
     #Callbacks
-    callback_save_model = True  # save model weights to disk
+    callback_save_model = False  # save model weights to disk
     callback_tensorboard = False #output log data to tensorboard
     matthews_correlation_callback = True
     show_model_summary = False

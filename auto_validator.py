@@ -13,6 +13,7 @@ import seaborn as sns
 
 warnings.simplefilter(action='ignore', category=UserWarning)
 
+
 def main():
     """ SETTINGS """
     participants = np.arange(1, 13, 1)  # 'all' or Participant ID (integer)
@@ -73,34 +74,48 @@ def plot_scores():
     print('Mean test score (MCC):', df.mcc_mean.mean().round(3))
     print('Mean test score (ACC):', df.acc_mean.mean().round(3))
 
-    sns.set('paper', 'darkgrid', rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8, 'axes.titlesize': 10,
+    sns.set('paper', 'ticks', rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8, 'axes.titlesize': 10,
                                      'xtick.labelsize': 8,
                                      'ytick.labelsize': 8, "pgf.rcfonts": False})
     plt.rc('font', **{'family': 'serif', 'serif': ['Times']})
     sns.set_palette('Blues')
 
-    """ PER PARTICIPANT """
+    # """ PER PARTICIPANT """
     df = df[['participant', 'type_mcc', 'direction_mcc', 'value_mcc']]
-    df.rename(columns={'type_mcc':'Type', 'direction_mcc':'Direction', 'value_mcc':'Value'}, inplace=True)
+    df.rename(columns={'type_mcc': 'Type', 'direction_mcc': 'Direction', 'value_mcc': 'Value'}, inplace=True)
     df_melt = df.melt(id_vars='participant')
+    #
+    # fig, ax = plt.subplots(figsize=settings.figsize_article)
+    # # plt.axhline(y=0.75, linewidth=1, color='k', linestyle='--')
+    # sns.boxplot(data=df_melt, x='participant', y='value', color=(146 / 255, 187 / 255, 211 / 255), saturation=1,
+    #             linewidth=1, fliersize=2, ax=ax)
+    # # plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=4)
+    # ax.set_xlabel('Participant')
+    # ax.set_ylabel('MCC')
+    # plt.savefig('{}/test_scores/test_perf_participant.pdf'.format(settings.output_dir), bbox_inches='tight')
+    # if settings.save_as_pgf:
+    #     plt.savefig('{}/test_scores/test_perf_participant.pgf'.format(settings.output_dir), bbox_inches='tight')
+    # plt.close()
 
+    """ BARPLOT """
     fig, ax = plt.subplots(figsize=settings.figsize_article)
-    # plt.axhline(y=0.75, linewidth=1, color='k', linestyle='--')
-    sns.boxplot(data=df_melt, x='participant', y='value', color=(146/255,187/255,211/255), saturation=1,
-                linewidth=1, fliersize=2, ax=ax)
-    # plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=4)
+    sns.barplot(data=df_melt, x='participant', y='value', hue='variable', saturation=1, ax=ax, palette='Blues')
+    sns.despine()
+    plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=3, title='Abstraction Level')
     ax.set_xlabel('Participant')
     ax.set_ylabel('MCC')
-    plt.savefig('{}/test_scores/test_perf_participant.pdf'.format(settings.output_dir), bbox_inches='tight')
+    ax.set_ylim([0, 1])
+    plt.savefig('{}/test_scores/test_perf_participant_bar.pdf'.format(settings.output_dir), bbox_inches='tight')
     if settings.save_as_pgf:
-        plt.savefig('{}/test_scores/test_perf_participant.pgf'.format(settings.output_dir), bbox_inches='tight')
+        plt.savefig('{}/test_scores/test_perf_participant_bar.pgf'.format(settings.output_dir), bbox_inches='tight')
     plt.close()
 
     """ PER TYPE """
     # df_melt = df.melt(id_vars='')
     fig, ax = plt.subplots(figsize=settings.figsize_article)
     # plt.axhline(y=0.75, linewidth=1, color='k', linestyle='--')
-    sns.boxplot(data=df_melt, x='variable', y='value', linewidth=1, fliersize=2, ax=ax)
+    sns.boxplot(data=df_melt, x='variable', y='value', linewidth=0.5, fliersize=2, ax=ax)
+    sns.despine()
     # plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=4)
     ax.set_xlabel('Abstraction level')
     ax.set_ylabel('MCC')

@@ -10,6 +10,7 @@ from config import settings
 from toolset.conflict import get_conflicts
 from toolset.get_relevant_aircraft import get_relevant_aircraft
 
+
 def create_dataframes(participant_list=None):
     """
     :return: Three dataframes:
@@ -405,6 +406,7 @@ def obtain_copx_list(participant_list):
                 copx_df = copx_df.append(df)
 
     return copx_df
+
 
 def determine_command_type(command):
     # Define command type

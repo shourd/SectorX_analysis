@@ -1,11 +1,14 @@
 import os
 import pickle
+import warnings
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
 from config import settings
+
+warnings.simplefilter(action='ignore', category=(UserWarning))
 
 
 def plot_commands(all_dataframes):
@@ -15,7 +18,7 @@ def plot_commands(all_dataframes):
                                   'xtick.labelsize': 8,
                                   'ytick.labelsize': 8, "pgf.rcfonts": False})
     plt.rc('font', **{'family': 'serif', 'serif': ['Times']})
-    sns.set_palette('Blues')
+    # sns.set_palette('Blues')
 
     # plt.rc('text', usetex=True)
 
@@ -32,7 +35,7 @@ def plot_commands(all_dataframes):
     """ COUNT OF ALL COMMANDS """
     # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=settings.figsize_article)
     fig, ax1 = plt.subplots(1, 1, figsize=settings.figsize_article)
-    sns.countplot(data=df_commands, x='participant_id', hue='run_id', ax=ax1)
+    sns.countplot(data=df_commands, x='participant_id', hue='run_id', ax=ax1, palette='Blues')
     ax1.legend_.set_title('Run')
     ax1.set_xlabel('Particpant')
     ax1.set_ylabel('Command count')
@@ -44,7 +47,7 @@ def plot_commands(all_dataframes):
 
     """ TYPE """
     fig, ax2 = plt.subplots(1, 1, figsize=settings.figsize_article)
-    sns.countplot(data=df_commands[df_commands.type != 'N/A'], x='participant_id', hue='type', ax=ax2)
+    sns.countplot(data=df_commands[df_commands.type != 'N/A'], x='participant_id', hue='type', ax=ax2, palette='Blues')
     ax2.legend_.set_title('Type')
     ax2.set_xlabel('Participant')
     ax2.set_ylabel('Command count')
@@ -61,7 +64,7 @@ def plot_commands(all_dataframes):
 
     """ COMMAND TYPE PER CONDITION """
     fig, (ax1) = plt.subplots(1, 1, figsize=settings.figsize1)
-    sns.countplot(data=df_commands, x='type', hue='SSD', ax=ax1)
+    sns.countplot(data=df_commands, x='type', hue='SSD', ax=ax1, palette='Blues')
     fig.suptitle('Command Count per Run')
     ax1.set_xlabel('Command type')
     plt.savefig(settings.data_folder + 'figures/command_type.png', bbox_inches='tight')
@@ -93,10 +96,12 @@ def plot_commands(all_dataframes):
     data_direction = df_commands[(df_commands.direction != 'N/A')]
     data_direction_hdg = data_direction[data_direction.type == 'HDG']
     fig, ax = plt.subplots(1,1, figsize=settings.figsize_article)
-    sns.countplot(data=data_direction_hdg, x='participant_id', hue='direction', hue_order=['left', 'right'], ax=ax)
+    sns.countplot(data=data_direction_hdg, x='participant_id', hue='direction', hue_order=['left', 'right'], ax=ax,
+                  palette='Blues')
     ax.legend_.set_title('Direction')
     ax.set_xlabel('Participant')
     ax.set_ylabel('HDG command count')
+    ax.set_ylim([0, 100])
 
     plt.legend(['Left', 'Right'], loc='lower right', bbox_to_anchor=(1, 1), ncol=4, title='Direction')
 
@@ -116,6 +121,7 @@ def plot_commands(all_dataframes):
     sns.countplot(data=hdg_commands, x='hdg_rel', color=(146/255,187/255,211/255), ax=ax)
     ax.set_xlabel('Relative heading [deg]')
     ax.set_ylabel('HDG command count')
+    ax.set_ylim([0, 250])
     plt.savefig(settings.data_folder + 'figures/command_count_value.pdf', bbox_inches='tight')
     plt.savefig(settings.data_folder + 'figures/command_count_value.pgf', bbox_inches='tight')
     plt.close()

@@ -13,6 +13,7 @@ from command_predictor import load_model
 from config import settings
 from radar_plot import make_radar_plot
 from strategy_trainer import prepare_training_set
+from confusion_matrix_script import get_confusion_metrics
 
 
 def main(model_weights='all', weights_folder=''):
@@ -76,12 +77,18 @@ def evaluate_target_type(weights, validation_participant_id, target_type, x_data
     filepath_weights = glob.glob('{}/{}/{}_{}_*_{}_*.hdf5'
                                      .format(settings.output_dir, weights_folder, target_type, weights, ssd))
     if len(filepath_weights) > 1: print('MULTIPLE WEIGHTS FOR SAME MODEL DETECTED')
-    if len(filepath_weights) is None: print('NO WEIGHTS DETECTED: {}/weights/{}_{}_*_{}_*.hdf5'.format(settings.output_dir, target_type, weights, ssd))
+    if len(filepath_weights) == 0: print('NO WEIGHTS DETECTED: {}/weights/{}_{}_*_{}_*.hdf5'.format(settings.output_dir, target_type, weights, ssd))
     model.load_weights(filepath_weights[0])
 
     model.compile(loss=keras.losses.categorical_crossentropy,
                   optimizer=keras.optimizers.Adam(),
                   metrics=['accuracy', 'matthews_correlation'])
+
+    y_pred = model.predict(x_data)
+    y_pred_rounded = np.argmax(y_pred, axis=1)
+    y_test = np.argmax(y_data, axis=1)
+
+    get_confusion_metrics(y_test, y_pred_rounded, save_figure=True, participant=validation_participant_id, target_type=target_type)
 
     test_score = model.test_on_batch(x_data, y_data, sample_weight=None)
 
@@ -157,15 +164,17 @@ def plot_delta_values(df):
     df_delta = df.loc[:,['delta_mcc', 'delta_acc']]
     df_melt = df_delta.reset_index().melt(id_vars='participant')
 
-    sns.set('paper', 'darkgrid', rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8, 'axes.titlesize': 10,
+    sns.set('paper', 'whitegrid', rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8, 'axes.titlesize': 10,
                                      'xtick.labelsize': 8,
                                      'ytick.labelsize': 8, "pgf.rcfonts": False})
     plt.rc('font', **{'family': 'serif', 'serif': ['Times']})
 
     fig, ax = plt.subplots(figsize=settings.figsize_article)
-    sns.barplot(data=df_melt, x='participant', y='value', hue='variable', ax=ax)
+    sns.barplot(data=df_melt, x='participant', y='value', hue='variable', ax=ax, palette='Blues')
     plt.ylabel('Performance difference')
     plt.xlabel('Participant')
+    plt.ylim([-0.2, 0.2])
+    plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=3, title='')
     plt.savefig('{}/test_scores/delta_general_individual.pdf'.format(settings.output_dir), bbox_inches='tight')
     if settings.save_as_pgf:
         plt.savefig('{}/test_scores/delta_general_individual.pgf'.format(settings.output_dir), bbox_inches='tight')
@@ -178,20 +187,22 @@ def plot_delta_values(df):
     df_acc.rename(columns={'general_acc': 'General', 'individual_acc': 'Individual'}, inplace=True)
     df_acc = df_acc.reset_index().melt(id_vars='participant')
 
-
     """ FINAL COMPARISON GENERAL INDIVIDUAL """
+    sns.set_style('ticks')
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=settings.figsize_article)
     g = sns.boxplot(data=df_mcc, x='variable', y='value', palette='Blues',
                     linewidth=1, fliersize=2, ax=ax1)
+    sns.despine()
     ax1.set_ylabel('MCC')
     ax1.set_xlabel('Model')
-    ax1.set_ylim([0.4, 1])
+    ax1.set_ylim([0.3, 1])
 
     g = sns.boxplot(data=df_acc, x='variable', y='value', palette='Blues',
                     linewidth=1, fliersize=2, ax=ax2)
+    sns.despine()
     ax2.set_ylabel('Accuracy')
     ax2.set_xlabel('Model')
-    plt.ylim([0.4, 1])
+    plt.ylim([0.3, 1])
 
     plt.tight_layout()
     plt.savefig('{}/test_scores/general_individual_comp.pdf'.format(settings.output_dir), bbox_inches='tight')
@@ -210,5 +221,5 @@ if __name__ == '__main__':
 
     metric = 'mcc'
     df = combine_score_dfs(metric=metric)
-    make_radar_plot(df, metric=metric)
+    # make_radar_plot(df, metric=metric)
     print('Results plotted')

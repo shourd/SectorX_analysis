@@ -24,6 +24,7 @@ from ssd_loader import ssd_loader
 
 # matplotlib.use('agg')  # fixes a multi-thread issue.
 
+
 def ssd_trainer(all_data, participant_ids):
 
     """ PREPARE TRAINING SET """
@@ -226,10 +227,12 @@ def prepare_training_set(ssd_data, command_data,
 
     """ FILTER COMMANDS """
     if target_type == 'direction':
-        # todo: check if this is an improvement (+ DCT)
         command_types = ['HDG', 'DCT']
         data_limit = 165  # average of all participants within this target type
         # command_types = ['HDG']
+    elif target_type == 'direction_spd':
+        command_types = ['SPD']
+        data_limit = 0
     elif target_type == 'geometry':
         command_types = ['HDG', 'SPD']
         command_data = command_data[command_data.preference != 'N/A']
@@ -239,7 +242,6 @@ def prepare_training_set(ssd_data, command_data,
         command_data = command_data[command_data.hdg_rel != 'N/A']
         data_limit = 215
     elif target_type == 'type':
-        # todo: clean up
         command_types = ['HDG', 'SPD', 'DCT']
         # filter all SPD = 250 commands (is revert back at end of sector)
         command_data = command_data[
@@ -247,7 +249,7 @@ def prepare_training_set(ssd_data, command_data,
             (command_data.type == 'DCT') |
             ((command_data.type == 'SPD') & (command_data.value != 250))
         ]
-        settings.num_classes =  len(command_types)
+        settings.num_classes = len(command_types)
         data_limit = 132
 
     command_data = command_data[command_data.ssd_id != 'N/A']

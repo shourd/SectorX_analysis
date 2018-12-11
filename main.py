@@ -83,7 +83,6 @@ def main():
         if settings.callback_save_model:
             remove_redundant_weights.main()
 
-
     print('Train time: {} min'.format(round(int(time.time() - start_time) / 60), 1))
     plot_results(settings.experiment_name)
 

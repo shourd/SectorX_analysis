@@ -97,17 +97,19 @@ def calc_consistency_metric():
     consistency_df_melt = consistency_df_normalized.melt(id_vars=['participant', 'skill_level'])
     consistency_df_melt.rename(columns={'variable': 'target_type'}, inplace=True)
 
-
-    sns.set('paper', 'darkgrid', rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8, 'axes.titlesize': 10,
+    sns.set('paper', 'ticks', rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8,
+                                    'axes.titlesize': 10,
                                      'xtick.labelsize': 8,
                                      'ytick.labelsize': 8, "pgf.rcfonts": False})
     plt.rc('font', **{'family': 'serif', 'serif': ['Times']})
+    boxplot_linewidth = 0.5
 
     fig, ax = plt.subplots(1, 1, figsize=settings.figsize_article)
     sns.barplot(data=consistency_df_melt, x='participant', y='value', hue='target_type', palette='Blues', ax=ax)
+    sns.despine()
     ax.set_xlabel('Participant')
     ax.set_ylabel('Consistency (normalized)')
-    plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=4)
+    plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=4, title='Abstraction Level')
     plt.savefig('{}/consistency/{}.pdf'.format(settings.output_dir, 'consistency_scores'), bbox_inches='tight')
     if settings.save_as_pgf:
         plt.savefig('{}/consistency/{}.pgf'.format(settings.output_dir, 'consistency_scores'), bbox_inches='tight')
@@ -118,10 +120,11 @@ def calc_consistency_metric():
     fig, ax = plt.subplots(1, 1, figsize=settings.figsize_article)
     g = sns.boxplot(data=consistency_df_melt, x='target_type', y='value', hue='skill_level',
                     hue_order=['novice','intermediate'],
-                    palette='Blues', linewidth=1, fliersize=2, ax=ax)
-    ax.set_xlabel('Skill Level')
+                    palette='Blues', linewidth=boxplot_linewidth, fliersize=2, ax=ax)
+    sns.despine()
+    ax.set_xlabel('Abstraction Level')
     ax.set_ylabel('Consistency (normalized)')
-    plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=2)
+    plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=2, title='Skill Level')
     plt.savefig('{}/consistency/{}.pdf'.format(settings.output_dir, 'consistency_scores_skill'),
                 bbox_inches='tight')
     if settings.save_as_pgf:

@@ -5,16 +5,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 import statsmodels.formula.api as smf
 import statsmodels.api as sm
+from config import settings
 
 warnings.simplefilter(action='ignore', category=(FutureWarning, UserWarning))
-
-from config import settings
 sns.set()
+
 
 def label_point(x, y, val, ax):
     a = pd.concat({'x': x, 'y': y, 'val': val}, axis=1)
     for i, point in a.iterrows():
         ax.text(point['x']+.05, point['y']+.01, str(point['val']), color='0.2', fontsize='10')
+
 
 def compare_performance_consistency():
 
@@ -29,8 +30,10 @@ def compare_performance_consistency():
     combined_df = pd.concat([consistency_df, performance_df], axis=1, sort=False, join='outer')
     combined_df.reset_index(inplace=True)
     combined_df.participant = ['P{}'.format(int(p)) for p in combined_df.participant]
+    combined_df.drop('Unnamed: 0', axis=1, inplace=True)
 
     print(combined_df.to_string())
+    combined_df.to_csv('{}/test_scores/cons_perf_dataframe.csv'.format(settings.output_dir))
 
     ols_report = smf.ols('mcc_mean ~ mean_consistency', data=combined_df).fit()
     # print(ols_report.summary())
@@ -66,7 +69,7 @@ def compare_performance_consistency():
     # settings
     sns.set()
     sns.set_context("notebook")   # smaller: paper
-    sns.set('paper', 'darkgrid', rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8, 'axes.titlesize': 10,
+    sns.set('paper', 'whitegrid', rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8, 'axes.titlesize': 10,
                                   'xtick.labelsize': 8,
                                   'ytick.labelsize': 8, "pgf.rcfonts": False})
     plt.rc('font', **{'family': 'serif', 'serif': ['Times']})
@@ -86,8 +89,8 @@ def compare_performance_consistency():
     # plt.title('Performance - Consistency relation')
     label_point(combined_df.mean_consistency, combined_df.mcc_mean, combined_df.participant, plt.gca())
     # ax.set_ylim([0.5, 1])
-    ax.set_xlabel('Participant Consistency (mean)')
-    ax.set_ylabel('Individual Model  MCC')
+    ax.set_xlabel('Participant Consistency')
+    ax.set_ylabel('Mean MCC')
     plt.savefig('{}/{}/{}.pdf'.format(settings.output_dir, settings.experiment_name, 'performance_consistency'),
                 bbox_inches='tight')
     if settings.save_as_pgf:
@@ -106,5 +109,5 @@ def delta_general_individual():
 
 
 if __name__ == '__main__':
-    # compare_performance_consistency()
+    compare_performance_consistency()
     delta_general_individual()

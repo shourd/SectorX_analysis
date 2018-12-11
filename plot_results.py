@@ -16,7 +16,7 @@ warnings.simplefilter(action='ignore', category=(FutureWarning, UserWarning))
 def plot_results(experiment_name):
     # settings
     sns.set_palette('Blues')
-    target_type_order = ['type', 'direction', 'value']
+    target_type_order = ['type', 'direction', 'direction_spd', 'value']
 
     # start
     print('Analyzing metrics_{}.csv'.format(experiment_name))
@@ -40,8 +40,9 @@ def plot_results(experiment_name):
     results_per_kfold = results.groupby(['skill_level','participant', 'target_type', 'repetition','SSD']).agg('max').reset_index()
     results_per_kfold.drop(['index', 'Unnamed: 0', 'epoch'], axis=1, inplace=True)
 
-    results_avg_kfold_all_ssd = results_per_kfold.groupby(['skill_level','participant', 'target_type','SSD']).agg('mean').reset_index()
+    results_avg_kfold_all_ssd = results_per_kfold.groupby(['skill_level', 'participant', 'target_type', 'SSD']).agg('mean').reset_index()
     results_avg_kfold_all_ssd.drop(['repetition'], axis=1, inplace=True)
+    results_avg_kfold_all_ssd.to_csv('{}/results_avg_kfold_all_ssd.csv'.format(settings.output_dir, experiment_name))
     results_avg_kfold = results_avg_kfold_all_ssd[results_avg_kfold_all_ssd.SSD == 'BOTH']
 
     mcc_mean = round(results_per_kfold.MCC.mean(), 2)
@@ -65,15 +66,17 @@ def plot_results(experiment_name):
     print('-----------------------')
 
     """ PLOT RUN PERFORMANCE """
-    sns.set('paper', 'darkgrid', rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8, 'axes.titlesize': 10,
+    sns.set('paper', 'ticks', rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8, 'axes.titlesize': 10,
                                      'xtick.labelsize': 8,
                                      'ytick.labelsize': 8, "pgf.rcfonts": False})
     plt.rc('font', **{'family': 'serif', 'serif': ['Times']})
+    boxplot_linewidth = 0.5
 
     # Performance per participant
     fig, ax = plt.subplots(1, 1, figsize=settings.figsize_article)
     sns.boxplot(x='participant', y='MCC', color=(146/255,187/255,211/255), saturation=1, data=results_per_kfold,
-                linewidth=1, fliersize=2, ax=ax)
+                linewidth=boxplot_linewidth, fliersize=2, ax=ax)
+    sns.despine()
     # ax.set_ylim([0, 1.1])
     ax.set_xlabel('Participant')
     plt.savefig('{}/{}_participant.pdf'.format(settings.output_dir, experiment_name), bbox_inches='tight')
@@ -82,11 +85,11 @@ def plot_results(experiment_name):
     plt.close()
     print('Plot saved')
 
-
     # performance per target type
     fig, ax = plt.subplots(1, 1, figsize=settings.figsize_article)
-    sns.boxplot(x='target_type', y='MCC', ax=ax, linewidth=1, fliersize=2,
-                    palette='Blues', data=results_avg_kfold)
+    sns.boxplot(x='target_type', y='MCC', ax=ax, linewidth=boxplot_linewidth, fliersize=2,
+                palette='Blues', data=results_avg_kfold)
+    sns.despine()
     plt.ylim([0, 1.1])
     ax.set_xlabel('Abstraction level')
     plt.savefig('{}/{}_targettype.pdf'.format(settings.output_dir, experiment_name), bbox_inches='tight')
@@ -108,8 +111,9 @@ def plot_results(experiment_name):
     # Skill level per target type
     fig, ax = plt.subplots(1, 1, figsize=settings.figsize_article)
     sns.boxplot(x='target_type', order=['type', 'direction', 'value'], y='MCC', hue='skill_level', hue_order=['novice', 'intermediate'],
-                palette='Blues', linewidth=1, fliersize=2,
-                data=results_avg_kfold_all_ssd, ax=ax)
+                palette='Blues', linewidth=boxplot_linewidth, fliersize=2,
+                data=results_avg_kfold, ax=ax)
+    sns.despine()
     plt.ylim([0, 1.1])
     plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=2, title='Skill level')
     ax.set_xlabel('Abstraction level')
@@ -122,9 +126,10 @@ def plot_results(experiment_name):
     # SSD per target type
     fig, ax = plt.subplots(1, 1, figsize=settings.figsize_article)
     sns.boxplot(x='target_type', order=['type', 'direction', 'value'], y='MCC', hue='SSD', hue_order=['OFF', 'ON'],
-                palette='Blues', linewidth=1, fliersize=2,
+                palette='Blues', linewidth=boxplot_linewidth, fliersize=2,
                 data=results_avg_kfold_all_ssd, ax=ax)
-    plt.ylim([0, 1.1])
+    sns.despine()
+    plt.ylim([0, 1])
     ax.legend_.set_title('SSD')
     plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=3, title='SSD')
     ax.set_xlabel('Abstraction level')
@@ -140,6 +145,7 @@ def plot_results(experiment_name):
     sns.lineplot(x='epoch', y='MCC', hue='target_type', hue_order=['type', 'direction', 'value'],
                 palette='muted', data=results[results.participant == 1], ax=ax, legend='brief')
     # plt.ylim([0, 1.1])
+    sns.despine()
     plt.xlim([1, 25])
     ax.set_xlabel('Epoch')
     leg_handles = ax.get_legend_handles_labels()[0]

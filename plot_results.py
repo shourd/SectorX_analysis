@@ -7,16 +7,10 @@ import seaborn as sns
 from config import settings
 import numpy as np
 
-sns.set()
-# matplotlib.use('macOsX')
-import warnings
-warnings.simplefilter(action='ignore', category=(FutureWarning, UserWarning))
-
 
 def plot_results(experiment_name):
     # settings
-    sns.set_palette('Blues')
-    target_type_order = ['type', 'direction', 'direction_spd', 'value']
+    target_type_order = ['type', 'direction', 'value']
 
     # start
     print('Analyzing metrics_{}.csv'.format(experiment_name))
@@ -66,10 +60,13 @@ def plot_results(experiment_name):
     print('-----------------------')
 
     """ PLOT RUN PERFORMANCE """
-    sns.set('paper', 'ticks', rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8, 'axes.titlesize': 10,
-                                     'xtick.labelsize': 8,
-                                     'ytick.labelsize': 8, "pgf.rcfonts": False})
-    plt.rc('font', **{'family': 'serif', 'serif': ['Times']})
+
+    sns.set()  # reset all settings.
+    sns.set('paper', 'whitegrid',
+            rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8,
+                'xtick.labelsize': 8, 'ytick.labelsize': 8},
+            font='Times New Roman',
+            palette='Blues')
     boxplot_linewidth = 0.5
 
     # Performance per participant
@@ -80,8 +77,6 @@ def plot_results(experiment_name):
     # ax.set_ylim([0, 1.1])
     ax.set_xlabel('Participant')
     plt.savefig('{}/{}_participant.pdf'.format(settings.output_dir, experiment_name), bbox_inches='tight')
-    # if settings.save_as_pgf:
-    #     plt.savefig('{}/perf_participant.pgf'.format(settings.output_dir), bbox_inches='tight')
     plt.close()
     print('Plot saved')
 
@@ -115,11 +110,11 @@ def plot_results(experiment_name):
                 data=results_avg_kfold, ax=ax)
     sns.despine()
     plt.ylim([0, 1.1])
-    plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=2, title='Skill level')
+    leg_handles = ax.get_legend_handles_labels()[0]
+    legend_labels = ['Novice', 'Intermediate']
+    plt.legend(leg_handles, legend_labels, loc='lower right', bbox_to_anchor=(1, 1), ncol=2, title='Skill level')
     ax.set_xlabel('Abstraction level')
-    plt.savefig('{}/{}_skill_level.pdf'.format(settings.output_dir, experiment_name), bbox_inches='tight')
-    if settings.save_as_pgf:
-        plt.savefig('{}/perf_skill_level.pgf'.format(settings.output_dir), bbox_inches='tight')
+    plt.savefig('{}/perf_skill_level.pdf'.format(settings.output_dir, experiment_name), bbox_inches='tight')
     plt.close()
     print('Plot saved')
 
@@ -129,18 +124,16 @@ def plot_results(experiment_name):
                 palette='Blues', linewidth=boxplot_linewidth, fliersize=2,
                 data=results_avg_kfold_all_ssd, ax=ax)
     sns.despine()
-    plt.ylim([0, 1])
+    plt.ylim([0, 1.1])
     ax.legend_.set_title('SSD')
     plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=3, title='SSD')
     ax.set_xlabel('Abstraction level')
-    plt.savefig('{}/{}_conditions_ssd.pdf'.format(settings.output_dir, experiment_name), bbox_inches='tight')
-    if settings.save_as_pgf:
-        plt.savefig('{}/perf_conditions_ssd.pgf'.format(settings.output_dir), bbox_inches='tight')
+    plt.savefig('{}/perf_conditions_ssd.pdf'.format(settings.output_dir, experiment_name), bbox_inches='tight')
     plt.close()
     print('Plot saved')
 
-
     """ OVER TIME """
+
     fig, ax = plt.subplots(1, 1, figsize=settings.figsize_article_high)
     sns.lineplot(x='epoch', y='MCC', hue='target_type', hue_order=['type', 'direction', 'value'],
                 palette='muted', data=results[results.participant == 1], ax=ax, legend='brief')
@@ -154,31 +147,32 @@ def plot_results(experiment_name):
     plt.legend(leg_handles, legend_labels, loc='lower right', bbox_to_anchor=(1, 1), ncol=4)
     # ax.legend(leg_handles, ['Training', 'Validation'], title='Data type')
 
-    plt.savefig('{}/{}_epochs_p1.pdf'.format(settings.output_dir, experiment_name), bbox_inches='tight')
-    if settings.save_as_pgf:
-        plt.savefig('{}/perf_epochs_p1.pgf'.format(settings.output_dir), bbox_inches='tight')
+    plt.savefig('{}/perf_epochs_p1.pdf'.format(settings.output_dir, experiment_name), bbox_inches='tight')
     plt.close()
-    print('Plot saved')
+    print('P1 Plot saved')
 
     # MCC per participant per target type
-    sns.catplot(x='target_type', y='MCC', hue='SSD',  hue_order=['OFF', 'ON', 'BOTH'],col='participant',
-                    col_wrap=3, kind='box', data=results_per_kfold,
-                    order=target_type_order, height=3, aspect=1, palette='muted')
-    plt.savefig('{}/{}_{}.pdf'.format(settings.output_dir, experiment_name, 'catplot'), bbox_inches='tight')
+    results_per_kfold.rename(columns={'target_type': 'Target Type'}, inplace=True)
+    sns.catplot(x='Target Type', y='MCC', hue='SSD',  hue_order=['OFF', 'ON', 'BOTH'], col='participant',
+                col_wrap=3, kind='box', data=results_per_kfold,
+                order=target_type_order, height=3, aspect=1, palette='Blues',
+                linewidth=boxplot_linewidth)
+    plt.savefig('{}/{}_{}.pdf'
+                ''.format(settings.output_dir, experiment_name, 'catplot'), bbox_inches='tight')
     plt.close()
-    print('Plot saved')
+    print('Catplot saved')
 
     # MCC and Val ACC per participant over time
-    for metric in ['MCC', 'val_acc']:
-        g = sns.relplot(x='epoch', y=metric, hue='target_type', col='participant', col_wrap=3, kind='line', data=results,
-                        height=3, aspect=1)
-        # g.fig.subplots_adjust(top=.9)
+    results.rename(columns={'target_type': 'Target Type', 'val_acc': 'accuracy'}, inplace=True)
+    for metric in ['MCC', 'accuracy']:
+        g = sns.relplot(x='epoch', y=metric, hue='Target Type', col='participant', col_wrap=3, kind='line', data=results,
+                        height=3, aspect=1, linewidth=boxplot_linewidth)
         plt.savefig('{}/{}_epochs_{}.pdf'.format(settings.output_dir, experiment_name, metric), bbox_inches='tight')
         plt.close()
         print('{} values saved'.format(metric))
 
 
 if __name__ == '__main__':
-    experiment_name = 'paper_seed2' #settings.experiment_name  # 'paper_crop_64_2'
+    experiment_name = 'paper_seed2'  # settings.experiment_name  # 'paper_crop_64_2'
     plot_results(experiment_name)
     # plot_results(settings.experiment_name)

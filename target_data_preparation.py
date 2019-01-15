@@ -54,23 +54,6 @@ def make_categorical_list(command_data, target_type):
         print('Left: {} ({}%)'.format(number_left, round(100*number_left/total),0))
         print('Right: {} ({}%)'.format(number_right, round(100*number_right/total),0))
 
-    elif target_type is 'direction_spd':
-        settings.class_names = ['Decrease', 'Revert', 'Increase']
-        settings.num_classes = len(settings.class_names)
-        for command in list(command_data.value):
-            if command < 250: res = 0
-            elif command == 250: res = 1
-            elif command > 250: res = 2
-            else:
-                print('ERROR: Command target_type not recognized')
-                break
-            target_list.append(res)
-
-        print('Decrease: {} samples. Revert: {} samples. Increase: {} samples'.format(target_list.count(0),
-                                                                                         target_list.count(1),
-                                                                                         target_list.count(2)))
-        print('Total SPD commands: {}, divided into {} classes.'.format(len(target_list), settings.num_classes))
-
     elif target_type is 'geometry':
         settings.class_names = ['In front', 'Behind']
         for command in list(command_data.preference):

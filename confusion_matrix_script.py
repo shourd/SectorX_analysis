@@ -1,6 +1,7 @@
 """ Taken from: http://scikit-learn.org/stable/auto_examples/model_selection/get_confusion_metrics.html """
 import itertools
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import confusion_matrix, matthews_corrcoef, f1_score, \
@@ -47,10 +48,15 @@ def get_confusion_metrics(y_test, y_pred,
     # http: // scikit - learn.org / stable / modules / model_evaluation.html
 
     if save_figure:
+        matplotlib.rcParams.update({'font.size': 16})
         cmap = plt.cm.Blues
-        plt.figure()
+        plt.figure(figsize=(5, 5))
         plt.imshow(cm, interpolation='nearest', cmap=cmap)
-        plt.colorbar()
+        # plt.colorbar()
+        if target_type is 'type' and len(np.unique(y_test)) == 2:
+            print('ja')
+            settings.class_names = ['HDG', 'DCT']
+
         tick_marks = np.arange(len(settings.class_names))
         plt.xticks(tick_marks, settings.class_names, rotation=45)
         plt.yticks(tick_marks, settings.class_names)

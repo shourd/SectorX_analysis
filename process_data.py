@@ -212,8 +212,9 @@ def analyse_commands(all_dataframes=None):
             df_commands.loc[(participant_id, run_id), 'direction'] = directions
             df_commands.loc[(participant_id, run_id), 'hdg_rel'] = hdg_rel_list
 
-            preferences = determine_control_preference(df_traffic_run, df_commands_run)
+            preferences, flow = determine_control_preference(df_traffic_run, df_commands_run)
             df_commands.loc[(participant_id, run_id), 'preference'] = preferences
+            df_commands.loc[(participant_id, run_id), 'flow'] = flow
 
     df_commands = df_commands[df_commands.type != 'N/A']
     all_dataframes['commands'] = df_commands
@@ -308,6 +309,7 @@ def determine_directional_values(df_traffic, df_commands):
 def determine_control_preference(df_traffic, df_commands):
     """ DETERMINE CONTROL PREFERENCE (BEHIND OR IN FRONT) """
 
+    flow = ['N/A'] * len(df_commands)
     preferences = ['N/A'] * len(df_commands)
 
     main_flow_ACIDs = df_traffic[(df_traffic.i_logpoint == 0) & (df_traffic.x_nm < 10)][['ACID']]
@@ -317,10 +319,11 @@ def determine_control_preference(df_traffic, df_commands):
     for i_command in range(len(df_commands)):
         command = df_commands.iloc[i_command]
 
-        if command.ACID not in commands_received_list and command.type != 'N/A': # only consider first decision per Aircraft
+        flow[i_command] = 'main' if command.ACID in main_flow_ACIDs else 'intruding'  # determine if in main or intruding flow
+
+        if command.ACID not in commands_received_list and command.type != 'N/A':  # only consider first decision per Aircraft
 
             if command.ACID in main_flow_ACIDs:
-
                 if command.direction is 'right' or command.direction is 'decrease':
                     preferences[i_command] = 'behind'
                 elif command.direction is 'left' or command.direction is 'increase':
@@ -332,7 +335,7 @@ def determine_control_preference(df_traffic, df_commands):
                     preferences[i_command] = 'infront'
 
                 commands_received_list.append(command.ACID)
-    return preferences
+    return preferences, flow
 
 
 def initialize_experiment_setup():

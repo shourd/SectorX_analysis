@@ -13,6 +13,7 @@ sns.set_context("paper")
 
 warnings.simplefilter(action='ignore', category=UserWarning)
 
+
 def main():
     plot_type = 'normal'  # or 'average'
     df_combined = pd.read_csv('{}/test_scores/test_scores_combined.csv'.format(settings.output_dir))
@@ -22,8 +23,8 @@ def main():
     sns.set_context("notebook")  # smaller: paper
     sns.set('paper', 'darkgrid', rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8, 'axes.titlesize': 10,
                                      'xtick.labelsize': 8,
-                                     'ytick.labelsize': 8, "pgf.rcfonts": False})
-    plt.rc('font', **{'family': 'serif', 'serif': ['Times']})
+                                     'ytick.labelsize': 8, "pgf.rcfonts": False},
+            font='Times New Roman')
 
     df_combined.type.loc[df_combined.type < 0] = 0  # convert negative numbers to zero for better looking plots.
 
@@ -34,8 +35,6 @@ def main():
     plt.legend(loc='lower right', bbox_to_anchor=(1.2, 1.2), ncol=3)
     plt.tight_layout()
     plt.savefig('{}/test_scores/radar_plot_P{}.pdf'.format(settings.output_dir, participant_id), bbox_inches='tight')
-    if settings.save_as_pgf:
-        plt.savefig('{}/test_scores/radar_plot_P{}.pgf'.format(settings.output_dir, participant_id), bbox_inches='tight')
     plt.close()
     print('Single plot DONE')
 

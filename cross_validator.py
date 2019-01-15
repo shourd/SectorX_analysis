@@ -144,7 +144,6 @@ def combine_score_dfs(metric):
     elif metric == 'acc':
         summary_df = summary_df.loc[:, ['general_acc', 'individual_acc']]
 
-
     return summary_df
 
 
@@ -160,14 +159,13 @@ def plot_delta_values(df):
     print('General ACC:', list(df.general_acc.round(3)))
     print('Individual ACC:', list(df.individual_acc.round(3)))
 
-
     df_delta = df.loc[:,['delta_mcc', 'delta_acc']]
     df_melt = df_delta.reset_index().melt(id_vars='participant')
 
-    sns.set('paper', 'whitegrid', rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8, 'axes.titlesize': 10,
-                                     'xtick.labelsize': 8,
-                                     'ytick.labelsize': 8, "pgf.rcfonts": False})
-    plt.rc('font', **{'family': 'serif', 'serif': ['Times']})
+    sns.set('paper', 'whitegrid',
+            rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8,
+                'axes.titlesize': 10, 'xtick.labelsize': 8, 'ytick.labelsize': 8},
+            font='Times New Roman')
 
     fig, ax = plt.subplots(figsize=settings.figsize_article)
     sns.barplot(data=df_melt, x='participant', y='value', hue='variable', ax=ax, palette='Blues')
@@ -176,8 +174,6 @@ def plot_delta_values(df):
     plt.ylim([-0.2, 0.2])
     plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=3, title='')
     plt.savefig('{}/test_scores/delta_general_individual.pdf'.format(settings.output_dir), bbox_inches='tight')
-    if settings.save_as_pgf:
-        plt.savefig('{}/test_scores/delta_general_individual.pgf'.format(settings.output_dir), bbox_inches='tight')
 
     df_mcc = df.loc[:, ['general_mcc', 'individual_mcc']]
     df_mcc.rename(columns={'general_mcc': 'General', 'individual_mcc': 'Individual'}, inplace=True)
@@ -188,17 +184,20 @@ def plot_delta_values(df):
     df_acc = df_acc.reset_index().melt(id_vars='participant')
 
     """ FINAL COMPARISON GENERAL INDIVIDUAL """
-    sns.set_style('ticks')
+    sns.set('paper', 'whitegrid',
+            rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8,
+                'axes.titlesize': 10, 'xtick.labelsize': 8, 'ytick.labelsize': 8},
+            font='Times New Roman')
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=settings.figsize_article)
     g = sns.boxplot(data=df_mcc, x='variable', y='value', palette='Blues',
-                    linewidth=1, fliersize=2, ax=ax1)
+                    linewidth=0.5, fliersize=2, ax=ax1)
     sns.despine()
     ax1.set_ylabel('MCC')
     ax1.set_xlabel('Model')
     ax1.set_ylim([0.3, 1])
 
     g = sns.boxplot(data=df_acc, x='variable', y='value', palette='Blues',
-                    linewidth=1, fliersize=2, ax=ax2)
+                    linewidth=0.5, fliersize=2, ax=ax2)
     sns.despine()
     ax2.set_ylabel('Accuracy')
     ax2.set_xlabel('Model')
@@ -206,8 +205,7 @@ def plot_delta_values(df):
 
     plt.tight_layout()
     plt.savefig('{}/test_scores/general_individual_comp.pdf'.format(settings.output_dir), bbox_inches='tight')
-    if settings.save_as_pgf:
-        plt.savefig('{}/test_scores/general_individual_comp.pgf'.format(settings.output_dir), bbox_inches='tight')
+    print('general_individual_comp.pdf Saved')
 
 
 if __name__ == '__main__':
@@ -221,5 +219,6 @@ if __name__ == '__main__':
 
     metric = 'mcc'
     df = combine_score_dfs(metric=metric)
-    # make_radar_plot(df, metric=metric)
+    make_radar_plot(df, metric=metric)
+    print('Overview radar plot saved')
     print('Results plotted')

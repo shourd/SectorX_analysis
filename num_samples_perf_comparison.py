@@ -18,10 +18,11 @@ def main():
     print(combined_df.to_string())
 
     # Comparison plot
-    sns.set('paper', 'whitegrid', rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8, 'axes.titlesize': 10,
-                                     'xtick.labelsize': 8,
-                                     'ytick.labelsize': 8, "pgf.rcfonts": False})
-    plt.rc('font', **{'family': 'serif', 'serif': ['Times']})
+    sns.set('paper', 'whitegrid',
+            rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8, 'axes.titlesize': 10,
+                'xtick.labelsize': 8, 'ytick.labelsize': 8, "pgf.rcfonts": False},
+            font='Times New Roman')
+    # plt.rc('font', **{'family': 'serif', 'serif': ['Times']})
 
     participants = pd.Series(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10', 'P11', 'P12'])
 
@@ -48,10 +49,10 @@ def main():
     plt.tight_layout()
     plt.savefig('{}/{}/{}.pdf'.format(settings.output_dir, settings.experiment_name, 'samples_performance'),
                 bbox_inches='tight')
-    if settings.save_as_pgf:
-        plt.savefig('{}/{}/{}.pgf'.format(settings.output_dir, settings.experiment_name, 'samples_performance'), bbox_inches='tight')
+    plt.savefig('{}/{}/{}.pdf'.format(settings.output_dir, settings.experiment_name, 'samples_performance'), bbox_inches='tight')
 
     print('Regplots plotted and saved.')
+
 
 if __name__ == '__main__':
     main()

@@ -27,8 +27,8 @@ def main():
     validation_scores_df = pd.DataFrame()
     commands, ssd_stack = load_test_data()
 
-    ssd_conditions = ['ON', 'OFF', 'BOTH']
-    ssd_conditions = ['BOTH']
+    ssd_conditions = ['ON', 'OFF']
+    # ssd_conditions = ['BOTH']
 
     for ssd_condition in ssd_conditions:
         settings.ssd_condition = ssd_condition
@@ -61,7 +61,7 @@ def main():
     # validation_scores_df.index.name = 'participant'
     validation_scores_df['acc_mean'] = validation_scores_df[['type_acc', 'direction_acc', 'value_acc']].mean(axis=1)
     validation_scores_df['mcc_mean'] = validation_scores_df[['type_mcc', 'direction_mcc', 'value_mcc']].mean(axis=1)
-    validation_scores_df.to_csv('{}/test_scores/test_scores_{}.csv'.format(settings.output_dir, 'auto'))
+    validation_scores_df.to_csv('{}/test_scores/test_scores_{}.csv'.format(settings.output_dir, 'auto_ssd'))
 
     print(validation_scores_df)
 
@@ -76,8 +76,9 @@ def plot_scores():
 
     sns.set('paper', 'ticks', rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8, 'axes.titlesize': 10,
                                      'xtick.labelsize': 8,
-                                     'ytick.labelsize': 8, "pgf.rcfonts": False})
-    plt.rc('font', **{'family': 'serif', 'serif': ['Times']})
+                                     'ytick.labelsize': 8},
+            font='Times New Roman')
+
     sns.set_palette('Blues')
 
     # """ PER PARTICIPANT """
@@ -106,23 +107,19 @@ def plot_scores():
     ax.set_ylabel('MCC')
     ax.set_ylim([0, 1])
     plt.savefig('{}/test_scores/test_perf_participant_bar.pdf'.format(settings.output_dir), bbox_inches='tight')
-    if settings.save_as_pgf:
-        plt.savefig('{}/test_scores/test_perf_participant_bar.pgf'.format(settings.output_dir), bbox_inches='tight')
     plt.close()
 
-    """ PER TYPE """
-    # df_melt = df.melt(id_vars='')
-    fig, ax = plt.subplots(figsize=settings.figsize_article)
-    # plt.axhline(y=0.75, linewidth=1, color='k', linestyle='--')
-    sns.boxplot(data=df_melt, x='variable', y='value', linewidth=0.5, fliersize=2, ax=ax)
-    sns.despine()
-    # plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=4)
-    ax.set_xlabel('Abstraction level')
-    ax.set_ylabel('MCC')
-    plt.savefig('{}/test_scores/test_perf_target_type.pdf'.format(settings.output_dir), bbox_inches='tight')
-    if settings.save_as_pgf:
-        plt.savefig('{}/test_scores/test_perf_target_type.pgf'.format(settings.output_dir), bbox_inches='tight')
-    plt.close()
+    # """ PER TYPE """
+    # # df_melt = df.melt(id_vars='')
+    # fig, ax = plt.subplots(figsize=settings.figsize_article)
+    # # plt.axhline(y=0.75, linewidth=1, color='k', linestyle='--')
+    # sns.boxplot(data=df_melt, x='variable', y='value', linewidth=0.5, fliersize=2, ax=ax)
+    # sns.despine()
+    # # plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=4)
+    # ax.set_xlabel('Abstraction level')
+    # ax.set_ylabel('MCC')
+    # plt.savefig('{}/test_scores/test_perf_target_type.pdf'.format(settings.output_dir), bbox_inches='tight')
+    # plt.close()
 
 
 if __name__ == '__main__':

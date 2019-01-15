@@ -48,7 +48,6 @@ def ssd_loader(dataframes=None):
         if ssd_id not in list(df_commands_edit.ssd_id):
             print('ERROR:', filename)
 
-
         """ IMAGE PART """
         ssd = Image.open(settings.ssd_folder + '/' + filename)
 

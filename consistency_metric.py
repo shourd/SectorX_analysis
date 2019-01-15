@@ -83,54 +83,52 @@ def calc_consistency_metric():
     consistency_df_normalized.to_csv(settings.output_dir + '/consistency/consistency_metrics_normalized.csv')
 
     # add skill level
-    # skill_level_list = ['novice' if (p in np.arange(1,7,1)) or (p == 11) else 'intermediate' for p in consistency_df.participant]
     skill_level_list = ['novice' if (p in np.arange(1, 7, 1)) else 'intermediate' for p in consistency_df.participant]
     # skill_level_list[10] = 'outlier'
     consistency_df_normalized['skill_level'] = skill_level_list
 
     print(consistency_df_normalized.to_string())
 
-
     """ PLOTTING """
+    sns.set()  # reset all settings.
+    sns.set('paper', 'whitegrid',
+            rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8,
+                'xtick.labelsize': 8, 'ytick.labelsize': 8},
+            font='Times New Roman',
+            palette='Blues')
+    boxplot_linewidth = 0.5
+
     consistency_df_normalized.rename(columns={'type_consistency': 'Type', 'direction_consistency': 'Direction',
                                               'value_consistency': 'Value', 'mean_consistency': 'Mean'}, inplace=True)
     consistency_df_melt = consistency_df_normalized.melt(id_vars=['participant', 'skill_level'])
     consistency_df_melt.rename(columns={'variable': 'target_type'}, inplace=True)
-
-    sns.set('paper', 'ticks', rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8,
-                                    'axes.titlesize': 10,
-                                     'xtick.labelsize': 8,
-                                     'ytick.labelsize': 8, "pgf.rcfonts": False})
-    plt.rc('font', **{'family': 'serif', 'serif': ['Times']})
-    boxplot_linewidth = 0.5
 
     fig, ax = plt.subplots(1, 1, figsize=settings.figsize_article)
     sns.barplot(data=consistency_df_melt, x='participant', y='value', hue='target_type', palette='Blues', ax=ax)
     sns.despine()
     ax.set_xlabel('Participant')
     ax.set_ylabel('Consistency (normalized)')
+    ax.set_ylim([-2, 2.2])
     plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=4, title='Abstraction Level')
     plt.savefig('{}/consistency/{}.pdf'.format(settings.output_dir, 'consistency_scores'), bbox_inches='tight')
-    if settings.save_as_pgf:
-        plt.savefig('{}/consistency/{}.pgf'.format(settings.output_dir, 'consistency_scores'), bbox_inches='tight')
     plt.close()
-
 
     # CONSISTENCY PER SKILL LEVEL
     fig, ax = plt.subplots(1, 1, figsize=settings.figsize_article)
     g = sns.boxplot(data=consistency_df_melt, x='target_type', y='value', hue='skill_level',
-                    hue_order=['novice','intermediate'],
+                    hue_order=['novice', 'intermediate'],
                     palette='Blues', linewidth=boxplot_linewidth, fliersize=2, ax=ax)
     sns.despine()
     ax.set_xlabel('Abstraction Level')
     ax.set_ylabel('Consistency (normalized)')
-    plt.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=2, title='Skill Level')
+    ax.set_ylim([-2, 2.2])
+    leg_handles = ax.get_legend_handles_labels()[0]
+    legend_labels = ['Novice', 'Intermediate']
+    plt.legend(leg_handles, legend_labels, loc='lower right', bbox_to_anchor=(1, 1), ncol=2, title='Skill Level')
     plt.savefig('{}/consistency/{}.pdf'.format(settings.output_dir, 'consistency_scores_skill'),
                 bbox_inches='tight')
-    if settings.save_as_pgf:
-        plt.savefig('{}/consistency/{}.pgf'.format(settings.output_dir, 'consistency_scores_skill'),
-                    bbox_inches='tight')
     plt.close()
+
 
 def normalize_consistency(x, y):
     total = x + y

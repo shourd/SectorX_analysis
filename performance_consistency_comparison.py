@@ -67,13 +67,11 @@ def compare_performance_consistency():
 
     """ PLOTTING """
     # settings
-    sns.set()
-    sns.set_context("notebook")   # smaller: paper
-    sns.set('paper', 'whitegrid', rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8, 'axes.titlesize': 10,
-                                  'xtick.labelsize': 8,
-                                  'ytick.labelsize': 8, "pgf.rcfonts": False})
-    plt.rc('font', **{'family': 'serif', 'serif': ['Times']})
-    # sns.set_palette('Blues')
+    sns.set()  # reset all settings.
+    sns.set('paper', 'whitegrid',
+            rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8,
+                'xtick.labelsize': 8, 'ytick.labelsize': 8},
+            font='Times New Roman')
 
     # performance plot
     performance_df_melt = performance_df.reset_index().melt(id_vars='participant')
@@ -85,17 +83,16 @@ def compare_performance_consistency():
 
     # Comparison plot
     fig, ax = plt.subplots(1, 1, figsize=settings.figsize_article_high)
-    sns.regplot(x='mean_consistency', y='mcc_mean', robust=True, ci=None, data=combined_df, ax=ax)
+    sns.regplot(x='mean_consistency', y='mcc_mean', robust=True, ci=None, data=combined_df, ax=ax,
+                line_kws={'linewidth': 2})
     # plt.title('Performance - Consistency relation')
     label_point(combined_df.mean_consistency, combined_df.mcc_mean, combined_df.participant, plt.gca())
     # ax.set_ylim([0.5, 1])
     ax.set_xlabel('Participant Consistency')
     ax.set_ylabel('Mean MCC')
+    ax.set_ylim([0.4, 0.8])
     plt.savefig('{}/{}/{}.pdf'.format(settings.output_dir, settings.experiment_name, 'performance_consistency'),
                 bbox_inches='tight')
-    if settings.save_as_pgf:
-        plt.savefig('{}/{}/{}.pgf'.format(settings.output_dir, settings.experiment_name, 'performance_consistency'), bbox_inches='tight')
-
     print('Saved: {}/{}/{}.pdf'.format(settings.output_dir, settings.experiment_name, 'performance_consistency'))
     plt.close()
 

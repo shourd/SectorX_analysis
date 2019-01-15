@@ -9,14 +9,14 @@ import seaborn as sns
 
 warnings.simplefilter(action='ignore', category=UserWarning)
 
+
 def make_radar_plot(df=None, weights='overview', metric='MCC'):
     # plot settings
     sns.set()
     sns.set_context("notebook")   # smaller: paper
     sns.set('paper', 'darkgrid', rc={'font.size': 10, 'axes.labelsize': 10, 'legend.fontsize': 8, 'axes.titlesize': 10,
-                                  'xtick.labelsize': 8,
-                                  'ytick.labelsize': 8, "pgf.rcfonts": False})
-    plt.rc('font', **{'family': 'serif', 'serif': ['Times']})
+                                     'xtick.labelsize': 8, 'ytick.labelsize': 8, "pgf.rcfonts": False},
+            font='Times New Roman')
     # sns.set_palette('Blues')
 
     # Set data
@@ -45,7 +45,7 @@ def make_radar_plot(df=None, weights='overview', metric='MCC'):
     # ax.xaxis.grid(True, color='grey', linestyle='-')
 
     if weights == 'overview':
-        labels = ['General model', 'Individual model']
+        labels = ['General models', 'Individual model']
     else:
         labels = ['Type', 'Direction', 'Value']
 
@@ -57,8 +57,6 @@ def make_radar_plot(df=None, weights='overview', metric='MCC'):
 
     # plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
     plt.legend(loc='lower right', bbox_to_anchor=(1.2, 1.2), ncol=2)
-    if settings.save_as_pgf:
-        plt.savefig('{}/test_scores/spinplot_{}_{}.pgf'.format(settings.output_dir, weights, metric), bbox_inches='tight')
     plt.savefig('{}/test_scores/spinplot_{}_{}.pdf'.format(settings.output_dir, weights, metric), bbox_inches='tight')
     plt.close()
 

@@ -1,6 +1,7 @@
 # config.py
 import numpy as np
 
+
 class Settings:
     # DATA LOCATIONS
     data_folder = 'data/all/'
@@ -18,7 +19,7 @@ class Settings:
     ssd_import_size = (64, 64)
     save_png_files = True
     ignore_PRV = True
-    export_file = '181121_all_dataframes_crop_nonoise.p'
+    export_file = '181229_all_dataframes_crop_64.p'
 
     # CNN TRAIN SETTINGS
     seed = 1
@@ -30,7 +31,6 @@ class Settings:
     ssd_conditions = ['ON', 'OFF', 'BOTH']
     ssd_conditions = ['BOTH']
     target_types = ['type', 'direction', 'value']
-    target_types = ['direction_spd']
     limit_data = True  # only applicable when participant = 'all'!
     load_weights = False  # 'direction_all_full_experiment_pooling_rep15'
     epochs = 30
@@ -46,7 +46,6 @@ class Settings:
     matthews_correlation_callback = True
     show_model_summary = False
     save_model_structure = True  # save png of model structure to disk
-    save_as_pgf = True
 
     # SERIALIZE AND PROCESS SETTINGS
     caution_time = 120          # orange conflict
@@ -62,6 +61,7 @@ class Settings:
     figsize4 = (20, 5)
     figsize_article = (5, 2)
     figsize_article_high = (5, 3)
+
 
     # inits
     current_participant = 'P0'
@@ -97,6 +97,8 @@ class Settings:
             self.skill_level = 'all'
 
         return self.skill_level
+
+    #
 
 
 global settings
